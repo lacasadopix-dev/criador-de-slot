@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Menu, ShieldAlert, Plus, Minus, Coins, Move, Lock, Eye, EyeOff, RotateCw, Scaling, Anchor, Trophy, Ruler, Crosshair, Activity, Zap } from 'lucide-react';
+import { Menu, ShieldAlert, Plus, Minus, Coins, Move, Lock, Eye, EyeOff, RotateCw, Scaling, Anchor, Trophy, Ruler, Crosshair, Activity, Zap, Maximize2 } from 'lucide-react';
 import { SlotMachine } from './SlotMachine';
 import { SpinButton } from './SpinButton';
 import { BackgroundMedia } from './BackgroundMedia';
@@ -24,6 +24,103 @@ interface GameStageProps {
   onSelectElement?: (elementId: string | null) => void;
   onUpdateAdminConfig?: (newConfig: Partial<AdminConfig>) => void;
 }
+
+interface QuickScaleToolbarProps {
+  elementId: string;
+  currentScale: number;
+  onUpdateScale: (elementId: string, newScale: number) => void;
+}
+
+const QuickScaleToolbar: React.FC<QuickScaleToolbarProps> = ({
+  elementId,
+  currentScale,
+  onUpdateScale,
+}) => {
+  return (
+    <div 
+      onClick={(e) => e.stopPropagation()} 
+      onMouseDown={(e) => e.stopPropagation()}
+      className="absolute -top-12 left-1/2 -translate-x-1/2 z-[130] flex items-center gap-1 bg-slate-950/95 border-2 border-amber-400 px-2.5 py-1 rounded-full shadow-[0_0_25px_rgba(245,158,11,0.95)] backdrop-blur-md pointer-events-auto select-none"
+    >
+      <span className="text-[10px] font-black text-amber-300 uppercase tracking-tight flex items-center gap-1 mr-0.5">
+        <Maximize2 className="w-3 h-3 text-amber-400" />
+        <span>Tam:</span>
+      </span>
+
+      {/* -10% button */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onUpdateScale(elementId, currentScale - 10);
+        }}
+        className="w-6 h-6 rounded-full bg-amber-500/20 hover:bg-amber-400 text-amber-300 hover:text-black font-extrabold text-sm flex items-center justify-center border border-amber-400/50 transition cursor-pointer active:scale-90"
+        title="Diminuir tamanho (-10%)"
+      >
+        -
+      </button>
+
+      {/* -2% button */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onUpdateScale(elementId, currentScale - 2);
+        }}
+        className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10 transition cursor-pointer active:scale-90"
+        title="Ajuste fino -2%"
+      >
+        -2
+      </button>
+
+      {/* Current scale badge */}
+      <span className="text-xs font-black text-amber-300 px-1 min-w-[38px] text-center font-mono">
+        {currentScale}%
+      </span>
+
+      {/* +2% button */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onUpdateScale(elementId, currentScale + 2);
+        }}
+        className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10 transition cursor-pointer active:scale-90"
+        title="Ajuste fino +2%"
+      >
+        +2
+      </button>
+
+      {/* +10% button */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onUpdateScale(elementId, currentScale + 10);
+        }}
+        className="w-6 h-6 rounded-full bg-amber-500/20 hover:bg-amber-400 text-amber-300 hover:text-black font-extrabold text-sm flex items-center justify-center border border-amber-400/50 transition cursor-pointer active:scale-90"
+        title="Aumentar tamanho (+10%)"
+      >
+        +
+      </button>
+
+      <div className="w-[1px] h-4 bg-white/20 mx-0.5" />
+
+      {/* Reset to 100% button */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onUpdateScale(elementId, 100);
+        }}
+        className="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-500/20 hover:bg-amber-400 text-amber-300 hover:text-black border border-amber-400/40 transition cursor-pointer active:scale-90"
+        title="Redefinir tamanho para 100%"
+      >
+        100%
+      </button>
+    </div>
+  );
+};
 
 export const GameStage: React.FC<GameStageProps> = ({
   adminConfig,
@@ -81,8 +178,11 @@ export const GameStage: React.FC<GameStageProps> = ({
     ? Math.max(scaleX, scaleY) 
     : Math.min(scaleX, scaleY);
 
-  // Dragging logic inside editor mode
+  // Dragging & Resizing logic inside editor mode
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [isResizing, setIsResizing] = useState<boolean>(false);
+  const justDraggedOrSelectedRef = useRef<boolean>(false);
+
   const dragStartRef = useRef<{ x: number; y: number; initialLeft: number; initialTop: number }>({
     x: 0,
     y: 0,
@@ -90,11 +190,19 @@ export const GameStage: React.FC<GameStageProps> = ({
     initialTop: 0,
   });
 
+  const resizeStartRef = useRef<{ x: number; y: number; initialScale: number; elementId: string }>({
+    x: 0,
+    y: 0,
+    initialScale: 100,
+    elementId: '',
+  });
+
   const handleMouseDown = (e: React.MouseEvent, elementId: string, currentLeft: number, currentTop: number) => {
     if (!isEditing || !onUpdateAdminConfig) return;
     e.stopPropagation();
     if (onSelectElement) onSelectElement(elementId);
 
+    justDraggedOrSelectedRef.current = true;
     setIsDragging(true);
     dragStartRef.current = {
       x: e.clientX,
@@ -104,49 +212,107 @@ export const GameStage: React.FC<GameStageProps> = ({
     };
   };
 
+  const handleResizeMouseDown = (e: React.MouseEvent, elementId: string, currentScale: number) => {
+    if (!isEditing || !onUpdateAdminConfig) return;
+    e.stopPropagation();
+    e.preventDefault();
+    if (onSelectElement) onSelectElement(elementId);
+
+    justDraggedOrSelectedRef.current = true;
+    setIsResizing(true);
+    resizeStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      initialScale: currentScale || 100,
+      elementId,
+    };
+  };
+
+  const getScaleForElement = (elementId: string): number => {
+    switch (elementId) {
+      case 'slot': return adminConfig.slotScale ?? 100;
+      case 'spin': return adminConfig.spinScale ?? 100;
+      case 'turbo': return adminConfig.turboScale ?? 100;
+      case 'balance': return adminConfig.balanceScale ?? 100;
+      case 'bet': return adminConfig.betScale ?? 100;
+      case 'winBox': return adminConfig.winBoxScale ?? 100;
+      case 'winOverlay': return adminConfig.winOverlayScale ?? 100;
+      case 'bg': return adminConfig.bgZoom ?? 100;
+      default: return 100;
+    }
+  };
+
+  const updateElementScale = (elementId: string, newScale: number) => {
+    if (!onUpdateAdminConfig) return;
+    const clampedScale = Math.min(300, Math.max(20, Math.round(newScale)));
+    switch (elementId) {
+      case 'slot': onUpdateAdminConfig({ slotScale: clampedScale }); break;
+      case 'spin': onUpdateAdminConfig({ spinScale: clampedScale }); break;
+      case 'turbo': onUpdateAdminConfig({ turboScale: clampedScale }); break;
+      case 'balance': onUpdateAdminConfig({ balanceScale: clampedScale }); break;
+      case 'bet': onUpdateAdminConfig({ betScale: clampedScale }); break;
+      case 'winBox': onUpdateAdminConfig({ winBoxScale: clampedScale }); break;
+      case 'winOverlay': onUpdateAdminConfig({ winOverlayScale: clampedScale }); break;
+      case 'bg': onUpdateAdminConfig({ bgZoom: clampedScale }); break;
+    }
+  };
+
   useEffect(() => {
-    if (!isDragging || !isEditing || !onUpdateAdminConfig || !selectedElement) return;
+    if ((!isDragging && !isResizing) || !isEditing || !onUpdateAdminConfig) return;
 
     const handleMouseMove = (e: MouseEvent) => {
-      const dxScreen = e.clientX - dragStartRef.current.x;
-      const dyScreen = e.clientY - dragStartRef.current.y;
+      if (isDragging && selectedElement) {
+        const dxScreen = e.clientX - dragStartRef.current.x;
+        const dyScreen = e.clientY - dragStartRef.current.y;
 
-      // Convert screen delta to Virtual Canvas delta
-      const dxVirtual = dxScreen / (scale || 1);
-      const dyVirtual = dyScreen / (scale || 1);
+        // Convert screen delta to Virtual Canvas delta
+        const dxVirtual = dxScreen / (scale || 1);
+        const dyVirtual = dyScreen / (scale || 1);
 
-      const dLeftPct = (dxVirtual / VIRTUAL_WIDTH) * 100;
-      const dTopPct = (dyVirtual / VIRTUAL_HEIGHT) * 100;
+        const dLeftPct = (dxVirtual / VIRTUAL_WIDTH) * 100;
+        const dTopPct = (dyVirtual / VIRTUAL_HEIGHT) * 100;
 
-      let newLeft = Math.round((dragStartRef.current.initialLeft + dLeftPct) * 10) / 10;
-      let newTop = Math.round((dragStartRef.current.initialTop + dTopPct) * 10) / 10;
+        let newLeft = Math.round((dragStartRef.current.initialLeft + dLeftPct) * 10) / 10;
+        let newTop = Math.round((dragStartRef.current.initialTop + dTopPct) * 10) / 10;
 
-      // Snap to grid if enabled
-      if (adminConfig.snapToGrid && adminConfig.gridSize) {
-        const step = adminConfig.gridSize;
-        newLeft = Math.round(newLeft / step) * step;
-        newTop = Math.round(newTop / step) * step;
-      }
+        // Snap to grid if enabled
+        if (adminConfig.snapToGrid && adminConfig.gridSize) {
+          const step = adminConfig.gridSize;
+          newLeft = Math.round(newLeft / step) * step;
+          newTop = Math.round(newTop / step) * step;
+        }
 
-      if (selectedElement === 'slot') {
-        onUpdateAdminConfig({ slotLeft: newLeft, slotTop: newTop });
-      } else if (selectedElement === 'spin') {
-        onUpdateAdminConfig({ spinLeft: newLeft, spinTop: newTop });
-      } else if (selectedElement === 'balance') {
-        onUpdateAdminConfig({ balanceLeft: newLeft, balanceTop: newTop });
-      } else if (selectedElement === 'bet') {
-        onUpdateAdminConfig({ betLeft: newLeft, betTop: newTop });
-      } else if (selectedElement === 'winBox') {
-        onUpdateAdminConfig({ winBoxLeft: newLeft, winBoxTop: newTop });
-      } else if (selectedElement === 'winOverlay') {
-        onUpdateAdminConfig({ winOverlayLeft: newLeft, winOverlayTop: newTop });
-      } else if (selectedElement === 'turbo') {
-        onUpdateAdminConfig({ turboLeft: newLeft, turboTop: newTop });
+        if (selectedElement === 'slot') {
+          onUpdateAdminConfig({ slotLeft: newLeft, slotTop: newTop });
+        } else if (selectedElement === 'spin') {
+          onUpdateAdminConfig({ spinLeft: newLeft, spinTop: newTop });
+        } else if (selectedElement === 'balance') {
+          onUpdateAdminConfig({ balanceLeft: newLeft, balanceTop: newTop });
+        } else if (selectedElement === 'bet') {
+          onUpdateAdminConfig({ betLeft: newLeft, betTop: newTop });
+        } else if (selectedElement === 'winBox') {
+          onUpdateAdminConfig({ winBoxLeft: newLeft, winBoxTop: newTop });
+        } else if (selectedElement === 'winOverlay') {
+          onUpdateAdminConfig({ winOverlayLeft: newLeft, winOverlayTop: newTop });
+        } else if (selectedElement === 'turbo') {
+          onUpdateAdminConfig({ turboLeft: newLeft, turboTop: newTop });
+        }
+      } else if (isResizing && resizeStartRef.current.elementId) {
+        const dx = e.clientX - resizeStartRef.current.x;
+        const dy = e.clientY - resizeStartRef.current.y;
+        const delta = (dx + dy) / 2;
+        const scaleDelta = Math.round(delta / 1.5);
+        const newScale = resizeStartRef.current.initialScale + scaleDelta;
+        updateElementScale(resizeStartRef.current.elementId, newScale);
       }
     };
 
     const handleMouseUp = () => {
       setIsDragging(false);
+      setIsResizing(false);
+      setTimeout(() => {
+        justDraggedOrSelectedRef.current = false;
+      }, 150);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -155,7 +321,7 @@ export const GameStage: React.FC<GameStageProps> = ({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, isEditing, selectedElement, scale, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, adminConfig, onUpdateAdminConfig]);
+  }, [isDragging, isResizing, isEditing, selectedElement, scale, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, adminConfig, onUpdateAdminConfig]);
 
   // Styles for individual elements on the Virtual Canvas
   const balanceStyle = calculateAnchorStyle({
@@ -304,11 +470,32 @@ export const GameStage: React.FC<GameStageProps> = ({
               backgroundSize: adminConfig.balanceBgImage ? 'cover' : undefined,
               backgroundPosition: adminConfig.balanceBgImage ? 'center' : undefined,
             }}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isEditing && onSelectElement) onSelectElement('balance');
+            }}
             onMouseDown={(e) => handleMouseDown(e, 'balance', adminConfig.balanceLeft ?? 3, adminConfig.balanceTop ?? 3)}
             className={`flex items-center gap-3 backdrop-blur-md px-5 py-2.5 rounded-2xl border shadow-xl transition-shadow cursor-pointer ${
               isEditing && selectedElement === 'balance' ? 'ring-4 ring-amber-400 border-amber-300' : ''
             }`}
           >
+            {isEditing && selectedElement === 'balance' && (
+              <>
+                <QuickScaleToolbar 
+                  elementId="balance" 
+                  currentScale={getScaleForElement('balance')} 
+                  onUpdateScale={updateElementScale} 
+                />
+                <div
+                  onMouseDown={(e) => handleResizeMouseDown(e, 'balance', getScaleForElement('balance'))}
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute -bottom-2.5 -right-2.5 w-7 h-7 rounded-full bg-amber-400 text-black border-2 border-yellow-100 flex items-center justify-center shadow-[0_0_15px_rgba(251,191,36,0.9)] cursor-nwse-resize z-[120] hover:scale-125 active:scale-110 transition-transform"
+                  title="Arraste para redimensionar o tamanho diretamente na tela"
+                >
+                  <Maximize2 className="w-3.5 h-3.5 text-black font-extrabold" />
+                </div>
+              </>
+            )}
             <Coins className="w-7 h-7 text-yellow-400 shrink-0" />
             <div className="flex flex-col">
               <span className="text-xs text-yellow-500 font-bold uppercase tracking-wider">Saldo</span>
@@ -333,11 +520,32 @@ export const GameStage: React.FC<GameStageProps> = ({
               backgroundSize: adminConfig.betBgImage ? 'cover' : undefined,
               backgroundPosition: adminConfig.betBgImage ? 'center' : undefined,
             }}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isEditing && onSelectElement) onSelectElement('bet');
+            }}
             onMouseDown={(e) => handleMouseDown(e, 'bet', adminConfig.betLeft ?? 55, adminConfig.betTop ?? 3)}
             className={`flex items-center backdrop-blur-md px-4 py-2 rounded-2xl border gap-3 transition-shadow cursor-pointer ${
               isEditing && selectedElement === 'bet' ? 'ring-4 ring-amber-400 border-amber-300' : ''
             }`}
           >
+            {isEditing && selectedElement === 'bet' && (
+              <>
+                <QuickScaleToolbar 
+                  elementId="bet" 
+                  currentScale={getScaleForElement('bet')} 
+                  onUpdateScale={updateElementScale} 
+                />
+                <div
+                  onMouseDown={(e) => handleResizeMouseDown(e, 'bet', getScaleForElement('bet'))}
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute -bottom-2.5 -right-2.5 w-7 h-7 rounded-full bg-amber-400 text-black border-2 border-yellow-100 flex items-center justify-center shadow-[0_0_15px_rgba(251,191,36,0.9)] cursor-nwse-resize z-[120] hover:scale-125 active:scale-110 transition-transform"
+                  title="Arraste para redimensionar o tamanho diretamente na tela"
+                >
+                  <Maximize2 className="w-3.5 h-3.5 text-black font-extrabold" />
+                </div>
+              </>
+            )}
             <button 
               onClick={(e) => {
                 if (isEditing) return;
@@ -383,11 +591,32 @@ export const GameStage: React.FC<GameStageProps> = ({
               backgroundSize: adminConfig.winBoxBgImage ? 'cover' : undefined,
               backgroundPosition: adminConfig.winBoxBgImage ? 'center' : undefined,
             }}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isEditing && onSelectElement) onSelectElement('winBox');
+            }}
             onMouseDown={(e) => handleMouseDown(e, 'winBox', adminConfig.winBoxLeft ?? 30, adminConfig.winBoxTop ?? 3)}
             className={`flex items-center gap-3 backdrop-blur-md px-5 py-2.5 rounded-2xl border shadow-xl transition-shadow cursor-pointer ${
               isEditing && selectedElement === 'winBox' ? 'ring-4 ring-amber-400 border-amber-300' : ''
             }`}
           >
+            {isEditing && selectedElement === 'winBox' && (
+              <>
+                <QuickScaleToolbar 
+                  elementId="winBox" 
+                  currentScale={getScaleForElement('winBox')} 
+                  onUpdateScale={updateElementScale} 
+                />
+                <div
+                  onMouseDown={(e) => handleResizeMouseDown(e, 'winBox', getScaleForElement('winBox'))}
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute -bottom-2.5 -right-2.5 w-7 h-7 rounded-full bg-amber-400 text-black border-2 border-yellow-100 flex items-center justify-center shadow-[0_0_15px_rgba(251,191,36,0.9)] cursor-nwse-resize z-[120] hover:scale-125 active:scale-110 transition-transform"
+                  title="Arraste para redimensionar o tamanho diretamente na tela"
+                >
+                  <Maximize2 className="w-3.5 h-3.5 text-black font-extrabold" />
+                </div>
+              </>
+            )}
             <Trophy className="w-7 h-7 text-emerald-400 shrink-0" />
             <div className="flex flex-col">
               <span className="text-xs text-emerald-400 font-bold uppercase tracking-wider">Ganho</span>
@@ -405,11 +634,32 @@ export const GameStage: React.FC<GameStageProps> = ({
         {((!gameState.isSpinning && gameState.win > 0 && gameState.bigWin) || (isEditing && selectedElement === 'winOverlay')) && adminConfig.winOverlayVisible !== false && (
           <div
             style={winOverlayStyle}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isEditing && onSelectElement) onSelectElement('winOverlay');
+            }}
             onMouseDown={(e) => handleMouseDown(e, 'winOverlay', adminConfig.winOverlayLeft ?? 50, adminConfig.winOverlayTop ?? 20)}
             className={`cursor-pointer ${
               isEditing && selectedElement === 'winOverlay' ? 'ring-4 ring-amber-400 border-amber-300 rounded-2xl p-1' : ''
             }`}
           >
+            {isEditing && selectedElement === 'winOverlay' && (
+              <>
+                <QuickScaleToolbar 
+                  elementId="winOverlay" 
+                  currentScale={getScaleForElement('winOverlay')} 
+                  onUpdateScale={updateElementScale} 
+                />
+                <div
+                  onMouseDown={(e) => handleResizeMouseDown(e, 'winOverlay', getScaleForElement('winOverlay'))}
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute -bottom-2.5 -right-2.5 w-7 h-7 rounded-full bg-amber-400 text-black border-2 border-yellow-100 flex items-center justify-center shadow-[0_0_15px_rgba(251,191,36,0.9)] cursor-nwse-resize z-[120] hover:scale-125 active:scale-110 transition-transform"
+                  title="Arraste para redimensionar o tamanho diretamente na tela"
+                >
+                  <Maximize2 className="w-3.5 h-3.5 text-black font-extrabold" />
+                </div>
+              </>
+            )}
             <WinCounterOverlay 
               winAmount={gameState.win > 0 ? gameState.win : 1250.00} 
               isBigWin={gameState.bigWin || (isEditing && selectedElement === 'winOverlay')} 
@@ -452,11 +702,32 @@ export const GameStage: React.FC<GameStageProps> = ({
               backgroundSize: adminConfig.slotBgImage ? 'cover' : undefined,
               backgroundPosition: adminConfig.slotBgImage ? 'center' : undefined,
             }}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isEditing && onSelectElement) onSelectElement('slot');
+            }}
             onMouseDown={(e) => handleMouseDown(e, 'slot', adminConfig.slotLeft ?? 5, adminConfig.slotTop ?? 28)}
             className={`flex items-center justify-center transition-shadow cursor-pointer ${
               isEditing && selectedElement === 'slot' ? 'ring-4 ring-amber-400 border-amber-300 rounded-2xl' : ''
             }`}
           >
+            {isEditing && selectedElement === 'slot' && (
+              <>
+                <QuickScaleToolbar 
+                  elementId="slot" 
+                  currentScale={getScaleForElement('slot')} 
+                  onUpdateScale={updateElementScale} 
+                />
+                <div
+                  onMouseDown={(e) => handleResizeMouseDown(e, 'slot', getScaleForElement('slot'))}
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute -bottom-2.5 -right-2.5 w-7 h-7 rounded-full bg-amber-400 text-black border-2 border-yellow-100 flex items-center justify-center shadow-[0_0_15px_rgba(251,191,36,0.9)] cursor-nwse-resize z-[120] hover:scale-125 active:scale-110 transition-transform"
+                  title="Arraste para redimensionar o tamanho diretamente na tela"
+                >
+                  <Maximize2 className="w-3.5 h-3.5 text-black font-extrabold" />
+                </div>
+              </>
+            )}
             <SlotMachine 
               isSpinning={gameState.isSpinning} 
               grid={grid} 
@@ -483,11 +754,32 @@ export const GameStage: React.FC<GameStageProps> = ({
               backgroundSize: adminConfig.spinBgImage ? 'cover' : undefined,
               backgroundPosition: adminConfig.spinBgImage ? 'center' : undefined,
             }}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isEditing && onSelectElement) onSelectElement('spin');
+            }}
             onMouseDown={(e) => handleMouseDown(e, 'spin', adminConfig.spinLeft ?? 50, adminConfig.spinTop ?? 88)}
             className={`cursor-pointer ${
               isEditing && selectedElement === 'spin' ? 'ring-4 ring-amber-400 border-amber-300 rounded-full' : ''
             }`}
           >
+            {isEditing && selectedElement === 'spin' && (
+              <>
+                <QuickScaleToolbar 
+                  elementId="spin" 
+                  currentScale={getScaleForElement('spin')} 
+                  onUpdateScale={updateElementScale} 
+                />
+                <div
+                  onMouseDown={(e) => handleResizeMouseDown(e, 'spin', getScaleForElement('spin'))}
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute -bottom-2.5 -right-2.5 w-7 h-7 rounded-full bg-amber-400 text-black border-2 border-yellow-100 flex items-center justify-center shadow-[0_0_15px_rgba(251,191,36,0.9)] cursor-nwse-resize z-[120] hover:scale-125 active:scale-110 transition-transform"
+                  title="Arraste para redimensionar o tamanho diretamente na tela"
+                >
+                  <Maximize2 className="w-3.5 h-3.5 text-black font-extrabold" />
+                </div>
+              </>
+            )}
             <SpinButton 
               shape={adminConfig.spinShape || 'circle'}
               onSpin={() => {
@@ -507,11 +799,32 @@ export const GameStage: React.FC<GameStageProps> = ({
               backgroundSize: adminConfig.turboBgImage ? 'cover' : undefined,
               backgroundPosition: adminConfig.turboBgImage ? 'center' : undefined,
             }}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isEditing && onSelectElement) onSelectElement('turbo');
+            }}
             onMouseDown={(e) => handleMouseDown(e, 'turbo', adminConfig.turboLeft ?? 80, adminConfig.turboTop ?? 88)}
             className={`cursor-pointer ${
               isEditing && selectedElement === 'turbo' ? 'ring-4 ring-amber-400 border-amber-300 rounded-2xl p-1' : ''
             }`}
           >
+            {isEditing && selectedElement === 'turbo' && (
+              <>
+                <QuickScaleToolbar 
+                  elementId="turbo" 
+                  currentScale={getScaleForElement('turbo')} 
+                  onUpdateScale={updateElementScale} 
+                />
+                <div
+                  onMouseDown={(e) => handleResizeMouseDown(e, 'turbo', getScaleForElement('turbo'))}
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute -bottom-2.5 -right-2.5 w-7 h-7 rounded-full bg-amber-400 text-black border-2 border-yellow-100 flex items-center justify-center shadow-[0_0_15px_rgba(251,191,36,0.9)] cursor-nwse-resize z-[120] hover:scale-125 active:scale-110 transition-transform"
+                  title="Arraste para redimensionar o tamanho diretamente na tela"
+                >
+                  <Maximize2 className="w-3.5 h-3.5 text-black font-extrabold" />
+                </div>
+              </>
+            )}
             <button
               type="button"
               onClick={(e) => {
