@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GameMenuModal } from './components/GameMenuModal';
 import { AdminPanelModal } from './components/AdminPanelModal';
+import { AutoSpinModal } from './components/AutoSpinModal';
 import { GameStage } from './components/GameStage';
 import { GameState, SymbolType, AdminConfig, GameSettings, SpinHistoryItem, Payline, BonusConfig } from './types';
 
@@ -153,6 +154,7 @@ export default function App() {
   const [spinHistory, setSpinHistory] = useState<SpinHistoryItem[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
+  const [isAutoModalOpen, setIsAutoModalOpen] = useState<boolean>(false);
 
   const [grid, setGrid] = useState<SymbolType[][]>(generateRandomGrid(adminConfig.numReels, adminConfig.numRows));
   const pendingResultRef = React.useRef<{ winAmount: number; isBigWin: boolean; currentBet: number; winMultiplier: number; resultGrid: SymbolType[][] } | null>(null);
@@ -280,7 +282,9 @@ export default function App() {
 
     // Auto spin check
     if (gameSettings.isAutoSpinning) {
-      if (gameSettings.autoSpinCount > 1) {
+      if (gameSettings.autoSpinCount >= 1000) {
+        // Infinite mode: keep running
+      } else if (gameSettings.autoSpinCount > 1) {
         setGameSettings(prev => ({ ...prev, autoSpinCount: prev.autoSpinCount - 1 }));
       } else {
         setGameSettings(prev => ({ ...prev, isAutoSpinning: false, autoSpinCount: 0 }));
@@ -288,15 +292,38 @@ export default function App() {
     }
   };
 
+  const handleStartAutoSpin = (count: number, betAmount: number, turbo: boolean) => {
+    setGameState(prev => ({ ...prev, bet: betAmount }));
+    setGameSettings(prev => ({
+      ...prev,
+      turboMode: turbo,
+      autoSpinCount: count,
+      isAutoSpinning: true,
+    }));
+  };
+
+  const handleStopAutoSpin = () => {
+    setGameSettings(prev => ({
+      ...prev,
+      isAutoSpinning: false,
+      autoSpinCount: 0,
+    }));
+  };
+
   // Auto spin trigger effect
   useEffect(() => {
-    if (gameSettings.isAutoSpinning && !gameState.isSpinning && gameState.balance >= gameState.bet) {
+    if (gameSettings.isAutoSpinning && !gameState.isSpinning) {
+      if (gameState.balance < gameState.bet) {
+        setGameSettings(prev => ({ ...prev, isAutoSpinning: false, autoSpinCount: 0 }));
+        return;
+      }
+      const delay = gameSettings.turboMode ? 350 : 800;
       const timer = setTimeout(() => {
         handleSpin();
-      }, 800);
+      }, delay);
       return () => clearTimeout(timer);
     }
-  }, [gameSettings.isAutoSpinning, gameState.isSpinning, gameState.balance]);
+  }, [gameSettings.isAutoSpinning, gameState.isSpinning, gameState.balance, gameState.bet, gameSettings.turboMode]);
 
   return (
     <div className="relative w-full h-screen h-[100dvh] bg-[#020617] font-sans text-white flex items-center justify-center overflow-hidden touch-none select-none p-0">
@@ -312,12 +339,29 @@ export default function App() {
           onBetChange={handleBetChange}
           onOpenMenu={() => setIsMenuOpen(true)}
           onOpenAdmin={() => setIsAdminOpen(true)}
+          onOpenAutoModal={() => setIsAutoModalOpen(true)}
+          onStopAutoSpin={handleStopAutoSpin}
           onClearWin={() => setGameState(prev => ({ ...prev, win: 0 }))}
           onAllReelsStopped={handleAllReelsStopped}
           onToggleTurbo={() => setGameSettings(prev => ({ ...prev, turboMode: !prev.turboMode }))}
           onUpdateAdminConfig={(newConfig) => setAdminConfig(prev => ({ ...prev, ...newConfig }))}
         />
       </div>
+
+      {/* AUTO SPIN MODAL */}
+      <AutoSpinModal
+        isOpen={isAutoModalOpen}
+        onClose={() => setIsAutoModalOpen(false)}
+        currentBet={gameState.bet}
+        minBet={adminConfig.minBet}
+        maxBet={adminConfig.maxBet}
+        balance={gameState.balance}
+        turboMode={gameSettings.turboMode}
+        autoSpinCount={gameSettings.autoSpinCount}
+        isAutoSpinning={gameSettings.isAutoSpinning}
+        onStartAutoSpin={handleStartAutoSpin}
+        onStopAutoSpin={handleStopAutoSpin}
+      />
 
       {/* GAME MENU MODAL */}
       <GameMenuModal

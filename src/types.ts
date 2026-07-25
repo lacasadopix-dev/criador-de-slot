@@ -104,6 +104,19 @@ export interface AdminConfig {
   turboBgImage?: string;
   turboShape?: 'circle' | 'pill' | 'rounded' | 'square' | 'octagon' | 'diamond';
 
+  // Auto-Spin Button Positioning & Customization
+  autoTop?: number; // default 88
+  autoLeft?: number; // default 20
+  autoScale?: number; // default 100
+  autoRotation?: number;
+  autoOpacity?: number;
+  autoZIndex?: number;
+  autoLocked?: boolean;
+  autoVisible?: boolean;
+  autoAnchor?: AnchorType;
+  autoBgImage?: string;
+  autoShape?: 'circle' | 'pill' | 'rounded' | 'square' | 'octagon' | 'diamond';
+
   // Balance Box Customization & Engine Properties
   balanceTop?: number; // default 3
   balanceLeft?: number; // default 3

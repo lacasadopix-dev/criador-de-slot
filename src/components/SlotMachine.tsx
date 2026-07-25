@@ -47,8 +47,8 @@ export const SlotMachine: React.FC<SlotMachineProps> = ({
     if (isSpinning) {
       setReelsSpinning(Array(effectiveNumReels).fill(true));
 
-      const baseSpinTime = spinStyle === 'turbo' ? 200 : spinStyle === 'cascade' ? 600 : 500;
-      const reelDelay = spinStyle === 'turbo' ? 80 : spinStyle === 'cascade' ? 200 : 160;
+      const baseSpinTime = spinStyle === 'turbo' ? 500 : spinStyle === 'cascade' ? 750 : 1100;
+      const reelDelay = spinStyle === 'turbo' ? 120 : spinStyle === 'cascade' ? 220 : 220;
 
       const timers: NodeJS.Timeout[] = [];
 

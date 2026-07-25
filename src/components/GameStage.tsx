@@ -16,6 +16,8 @@ interface GameStageProps {
   onBetChange: (delta: number) => void;
   onOpenMenu: () => void;
   onOpenAdmin: () => void;
+  onOpenAutoModal?: () => void;
+  onStopAutoSpin?: () => void;
   onClearWin?: () => void;
   onAllReelsStopped?: () => void;
   onToggleTurbo?: () => void;
@@ -221,6 +223,8 @@ export const GameStage: React.FC<GameStageProps> = ({
   onBetChange,
   onOpenMenu,
   onOpenAdmin,
+  onOpenAutoModal,
+  onStopAutoSpin,
   onClearWin,
   onAllReelsStopped,
   onToggleTurbo,
@@ -358,6 +362,7 @@ export const GameStage: React.FC<GameStageProps> = ({
       case 'slot': return adminConfig.slotScale ?? 100;
       case 'spin': return adminConfig.spinScale ?? 100;
       case 'turbo': return adminConfig.turboScale ?? 100;
+      case 'auto': return adminConfig.autoScale ?? 100;
       case 'balance': return adminConfig.balanceScale ?? 100;
       case 'bet': return adminConfig.betScale ?? 100;
       case 'winBox': return adminConfig.winBoxScale ?? 100;
@@ -374,6 +379,7 @@ export const GameStage: React.FC<GameStageProps> = ({
       case 'slot': onUpdateAdminConfig({ slotScale: clampedScale }); break;
       case 'spin': onUpdateAdminConfig({ spinScale: clampedScale }); break;
       case 'turbo': onUpdateAdminConfig({ turboScale: clampedScale }); break;
+      case 'auto': onUpdateAdminConfig({ autoScale: clampedScale }); break;
       case 'balance': onUpdateAdminConfig({ balanceScale: clampedScale }); break;
       case 'bet': onUpdateAdminConfig({ betScale: clampedScale }); break;
       case 'winBox': onUpdateAdminConfig({ winBoxScale: clampedScale }); break;
@@ -424,6 +430,8 @@ export const GameStage: React.FC<GameStageProps> = ({
           onUpdateAdminConfig({ winOverlayLeft: newLeft, winOverlayTop: newTop });
         } else if (activeEl === 'turbo') {
           onUpdateAdminConfig({ turboLeft: newLeft, turboTop: newTop });
+        } else if (activeEl === 'auto') {
+          onUpdateAdminConfig({ autoLeft: newLeft, autoTop: newTop });
         }
       } else if (isResizing && resizeStartRef.current.elementId) {
         const { mode, elementId, initialWidth, initialHeight, initialScale, x: startX, y: startY } = resizeStartRef.current;
@@ -549,21 +557,32 @@ export const GameStage: React.FC<GameStageProps> = ({
     zIndex: adminConfig.turboZIndex ?? 20,
   });
 
+  const autoStyle = calculateAnchorStyle({
+    anchor: adminConfig.autoAnchor || 'bottom',
+    top: adminConfig.autoTop !== undefined ? adminConfig.autoTop : undefined,
+    bottom: adminConfig.autoTop === undefined ? 8 : undefined,
+    left: adminConfig.autoLeft ?? 20,
+    scale: adminConfig.autoScale ?? 100,
+    rotation: adminConfig.autoRotation || 0,
+    opacity: adminConfig.autoOpacity ?? 100,
+    zIndex: adminConfig.autoZIndex ?? 20,
+  });
+
   const getTurboShapeClasses = (shape?: string) => {
     switch (shape) {
       case 'circle':
-        return 'w-14 h-14 rounded-full p-0 flex flex-col items-center justify-center text-[10px]';
+        return 'w-16 h-16 rounded-full p-0 flex flex-col items-center justify-center text-xs font-black';
       case 'pill':
-        return 'px-5 py-2.5 rounded-full flex items-center gap-2 font-black text-xs';
+        return 'px-6 py-3 rounded-full flex items-center gap-2.5 font-black text-sm sm:text-base';
       case 'square':
-        return 'w-14 h-14 rounded-xl p-0 flex flex-col items-center justify-center text-[10px]';
+        return 'w-16 h-16 rounded-2xl p-0 flex flex-col items-center justify-center text-xs font-black';
       case 'octagon':
-        return 'px-4 py-2.5 [clip-path:polygon(20%_0%,80%_0%,100%_20%,100%_80%,80%_100%,20%_100%,0%_80%,0%_20%)] flex items-center gap-2 font-black text-xs';
+        return 'px-5 py-3 [clip-path:polygon(20%_0%,80%_0%,100%_20%,100%_80%,80%_100%,20%_100%,0%_80%,0%_20%)] flex items-center gap-2.5 font-black text-sm sm:text-base';
       case 'diamond':
-        return 'w-12 h-12 rotate-45 rounded-sm p-0 flex items-center justify-center text-[9px] my-2 mx-2';
+        return 'w-14 h-14 rotate-45 rounded-md p-0 flex items-center justify-center text-xs font-black my-2 mx-2';
       case 'rounded':
       default:
-        return 'px-4 py-2.5 rounded-2xl flex items-center gap-2 font-black text-xs';
+        return 'px-5 py-3 rounded-2xl flex items-center gap-2.5 font-black text-sm sm:text-base';
     }
   };
 
@@ -618,8 +637,8 @@ export const GameStage: React.FC<GameStageProps> = ({
           <div 
             style={{
               ...balanceStyle,
-              backgroundColor: adminConfig.balanceBgColor || 'rgba(0, 0, 0, 0.75)',
-              borderColor: adminConfig.balanceBorderColor || 'rgba(212, 175, 55, 0.5)',
+              backgroundColor: adminConfig.balanceBgColor || 'rgba(0, 0, 0, 0.85)',
+              borderColor: adminConfig.balanceBorderColor || 'rgba(212, 175, 55, 0.6)',
               backgroundImage: adminConfig.balanceBgImage ? `url(${adminConfig.balanceBgImage})` : undefined,
               backgroundSize: adminConfig.balanceBgImage ? 'cover' : undefined,
               backgroundPosition: adminConfig.balanceBgImage ? 'center' : undefined,
@@ -630,7 +649,7 @@ export const GameStage: React.FC<GameStageProps> = ({
             }}
             onMouseDown={(e) => handleMouseDown(e, 'balance', adminConfig.balanceLeft ?? 3, adminConfig.balanceTop ?? 3)}
             onTouchStart={(e) => handleMouseDown(e, 'balance', adminConfig.balanceLeft ?? 3, adminConfig.balanceTop ?? 3)}
-            className={`flex items-center gap-3 backdrop-blur-md px-5 py-2.5 rounded-2xl border shadow-xl transition-shadow cursor-pointer ${
+            className={`flex items-center gap-3.5 backdrop-blur-md px-6 py-3 rounded-2xl border-2 shadow-2xl transition-shadow cursor-pointer ${
               isEditing && selectedElement === 'balance' ? 'ring-4 ring-amber-400 border-amber-300' : ''
             }`}
           >
@@ -655,12 +674,12 @@ export const GameStage: React.FC<GameStageProps> = ({
                 </div>
               </>
             )}
-            <Coins className="w-7 h-7 text-yellow-400 shrink-0" />
+            <Coins className="w-8 h-8 text-yellow-400 shrink-0 drop-shadow-[0_0_10px_rgba(250,204,21,0.7)]" />
             <div className="flex flex-col">
-              <span className="text-xs text-yellow-500 font-bold uppercase tracking-wider">Saldo</span>
+              <span className="text-xs sm:text-sm text-yellow-400 font-extrabold uppercase tracking-wider">Saldo</span>
               <span 
                 style={{ color: adminConfig.balanceTextColor || '#ffffff' }}
-                className="text-2xl font-black"
+                className="text-2xl sm:text-3xl font-black font-mono tracking-tight"
               >
                 R$ {gameState.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </span>
@@ -673,8 +692,8 @@ export const GameStage: React.FC<GameStageProps> = ({
           <div 
             style={{
               ...betStyle,
-              backgroundColor: adminConfig.betBgColor || 'rgba(0, 0, 0, 0.75)',
-              borderColor: adminConfig.betBorderColor || 'rgba(139, 105, 20, 0.5)',
+              backgroundColor: adminConfig.betBgColor || 'rgba(0, 0, 0, 0.85)',
+              borderColor: adminConfig.betBorderColor || 'rgba(212, 175, 55, 0.6)',
               backgroundImage: adminConfig.betBgImage ? `url(${adminConfig.betBgImage})` : undefined,
               backgroundSize: adminConfig.betBgImage ? 'cover' : undefined,
               backgroundPosition: adminConfig.betBgImage ? 'center' : undefined,
@@ -685,7 +704,7 @@ export const GameStage: React.FC<GameStageProps> = ({
             }}
             onMouseDown={(e) => handleMouseDown(e, 'bet', adminConfig.betLeft ?? 55, adminConfig.betTop ?? 3)}
             onTouchStart={(e) => handleMouseDown(e, 'bet', adminConfig.betLeft ?? 55, adminConfig.betTop ?? 3)}
-            className={`flex items-center backdrop-blur-md px-4 py-2 rounded-2xl border gap-3 transition-shadow cursor-pointer ${
+            className={`flex items-center backdrop-blur-md px-5 py-2.5 rounded-2xl border-2 gap-3.5 transition-shadow cursor-pointer ${
               isEditing && selectedElement === 'bet' ? 'ring-4 ring-amber-400 border-amber-300' : ''
             }`}
           >
@@ -717,15 +736,15 @@ export const GameStage: React.FC<GameStageProps> = ({
                 onBetChange(-5);
               }}
               disabled={gameState.isSpinning}
-              className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white font-bold disabled:opacity-50 cursor-pointer"
+              className="w-11 h-11 rounded-xl bg-amber-500/20 hover:bg-amber-400 hover:text-black flex items-center justify-center text-amber-300 font-black border border-amber-400/40 disabled:opacity-50 transition cursor-pointer shadow-md active:scale-90"
             >
-              <Minus className="w-5 h-5" />
+              <Minus className="w-6 h-6 stroke-[3]" />
             </button>
             <div className="flex flex-col items-center px-2">
-              <span className="text-xs text-gray-400 uppercase font-bold">Aposta</span>
+              <span className="text-xs sm:text-sm text-amber-300 uppercase font-extrabold tracking-wider">Aposta</span>
               <span 
                 style={{ color: adminConfig.betTextColor || '#fde073' }}
-                className="text-xl font-bold"
+                className="text-2xl sm:text-3xl font-black font-mono tracking-tight"
               >
                 R$ {gameState.bet.toFixed(2)}
               </span>
@@ -737,9 +756,9 @@ export const GameStage: React.FC<GameStageProps> = ({
                 onBetChange(5);
               }}
               disabled={gameState.isSpinning}
-              className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white font-bold disabled:opacity-50 cursor-pointer"
+              className="w-11 h-11 rounded-xl bg-amber-500/20 hover:bg-amber-400 hover:text-black flex items-center justify-center text-amber-300 font-black border border-amber-400/40 disabled:opacity-50 transition cursor-pointer shadow-md active:scale-90"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-6 h-6 stroke-[3]" />
             </button>
           </div>
         )}
@@ -749,8 +768,8 @@ export const GameStage: React.FC<GameStageProps> = ({
           <div 
             style={{
               ...winBoxStyle,
-              backgroundColor: adminConfig.winBoxBgColor || 'rgba(16, 185, 129, 0.25)',
-              borderColor: adminConfig.winBoxBorderColor || 'rgba(16, 185, 129, 0.6)',
+              backgroundColor: adminConfig.winBoxBgColor || 'rgba(6, 78, 59, 0.85)',
+              borderColor: adminConfig.winBoxBorderColor || 'rgba(52, 211, 153, 0.8)',
               backgroundImage: adminConfig.winBoxBgImage ? `url(${adminConfig.winBoxBgImage})` : undefined,
               backgroundSize: adminConfig.winBoxBgImage ? 'cover' : undefined,
               backgroundPosition: adminConfig.winBoxBgImage ? 'center' : undefined,
@@ -761,7 +780,7 @@ export const GameStage: React.FC<GameStageProps> = ({
             }}
             onMouseDown={(e) => handleMouseDown(e, 'winBox', adminConfig.winBoxLeft ?? 30, adminConfig.winBoxTop ?? 3)}
             onTouchStart={(e) => handleMouseDown(e, 'winBox', adminConfig.winBoxLeft ?? 30, adminConfig.winBoxTop ?? 3)}
-            className={`flex items-center gap-3 backdrop-blur-md px-5 py-2.5 rounded-2xl border shadow-xl transition-shadow cursor-pointer ${
+            className={`flex items-center gap-3.5 backdrop-blur-md px-6 py-3 rounded-2xl border-2 shadow-2xl transition-shadow cursor-pointer ${
               isEditing && selectedElement === 'winBox' ? 'ring-4 ring-amber-400 border-amber-300' : ''
             }`}
           >
@@ -786,12 +805,12 @@ export const GameStage: React.FC<GameStageProps> = ({
                 </div>
               </>
             )}
-            <Trophy className="w-7 h-7 text-emerald-400 shrink-0" />
+            <Trophy className="w-8 h-8 text-emerald-400 shrink-0 drop-shadow-[0_0_10px_rgba(52,211,153,0.7)]" />
             <div className="flex flex-col">
-              <span className="text-xs text-emerald-400 font-bold uppercase tracking-wider">Ganho</span>
+              <span className="text-xs sm:text-sm text-emerald-300 font-extrabold uppercase tracking-wider">Ganho</span>
               <span 
                 style={{ color: adminConfig.winBoxTextColor || '#34d399' }}
-                className="text-2xl font-black"
+                className="text-2xl sm:text-3xl font-black font-mono tracking-tight"
               >
                 R$ {(gameState.win > 0 ? gameState.win : 25.00).toFixed(2)}
               </span>
@@ -1092,6 +1111,73 @@ export const GameStage: React.FC<GameStageProps> = ({
           </div>
         )}
 
+        {/* Auto-Spin Button Area */}
+        {adminConfig.autoVisible !== false && (
+          <div 
+            style={{
+              ...autoStyle,
+              backgroundImage: adminConfig.autoBgImage ? `url(${adminConfig.autoBgImage})` : undefined,
+              backgroundSize: adminConfig.autoBgImage ? 'cover' : undefined,
+              backgroundPosition: adminConfig.autoBgImage ? 'center' : undefined,
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isEditing && onSelectElement) onSelectElement('auto');
+            }}
+            onMouseDown={(e) => handleMouseDown(e, 'auto', adminConfig.autoLeft ?? 20, adminConfig.autoTop ?? 88)}
+            onTouchStart={(e) => handleMouseDown(e, 'auto', adminConfig.autoLeft ?? 20, adminConfig.autoTop ?? 88)}
+            className={`cursor-pointer ${
+              isEditing && selectedElement === 'auto' ? 'ring-4 ring-amber-400 border-amber-300 rounded-2xl p-1' : ''
+            }`}
+          >
+            {isEditing && selectedElement === 'auto' && (
+              <>
+                <QuickScaleToolbar 
+                  elementId="auto" 
+                  currentScale={getScaleForElement('auto')} 
+                  currentLeft={adminConfig.autoLeft ?? 20}
+                  currentTop={adminConfig.autoTop ?? 88}
+                  onUpdateScale={updateElementScale} 
+                  onUpdateAdminConfig={onUpdateAdminConfig}
+                />
+                <div
+                  onMouseDown={(e) => handleResizeMouseDown(e, 'auto', getScaleForElement('auto'))}
+                  onTouchStart={(e) => handleResizeMouseDown(e, 'auto', getScaleForElement('auto'))}
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute -bottom-2.5 -right-2.5 w-7 h-7 rounded-full bg-amber-400 text-black border-2 border-yellow-100 flex items-center justify-center shadow-[0_0_15px_rgba(251,191,36,0.9)] cursor-nwse-resize z-[120] hover:scale-125 active:scale-110 transition-transform"
+                  title="Arraste para redimensionar o tamanho diretamente na tela"
+                >
+                  <Maximize2 className="w-3.5 h-3.5 text-black font-extrabold" />
+                </div>
+              </>
+            )}
+            <button
+              type="button"
+              onClick={(e) => {
+                if (isEditing) return;
+                e.stopPropagation();
+                if (gameSettings?.isAutoSpinning) {
+                  onStopAutoSpin?.();
+                } else {
+                  onOpenAutoModal?.();
+                }
+              }}
+              className={`border backdrop-blur-md uppercase tracking-wider transition-all shadow-xl cursor-pointer active:scale-95 ${getTurboShapeClasses(adminConfig.autoShape || 'pill')} ${
+                gameSettings?.isAutoSpinning
+                  ? 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-black border-yellow-200 shadow-[0_0_25px_rgba(245,158,11,0.9)] animate-pulse'
+                  : 'bg-black/80 text-amber-400 border-amber-500/40 hover:bg-amber-950/80 hover:border-amber-400'
+              }`}
+            >
+              <div className={`flex items-center gap-1.5 ${adminConfig.autoShape === 'diamond' ? '-rotate-45' : ''}`}>
+                <RotateCw className={`w-4 h-4 ${gameSettings?.isAutoSpinning ? 'animate-spin text-black' : 'text-amber-400'}`} />
+                <span className="font-extrabold font-mono">
+                  {gameSettings?.isAutoSpinning ? `AUTO (${gameSettings.autoSpinCount})` : 'AUTO'}
+                </span>
+              </div>
+            </button>
+          </div>
+        )}
+
         {/* Quick Stage Metrics & Shape Bar Toggle Buttons */}
         {isEditing && (
           <div className="absolute top-3 left-3 right-3 z-[100] flex items-center justify-between pointer-events-auto gap-2 flex-wrap">
@@ -1125,6 +1211,18 @@ export const GameStage: React.FC<GameStageProps> = ({
                 >
                   ⚡ Turbo
                 </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onSelectElement) onSelectElement('auto');
+                  }}
+                  className={`px-2 py-0.5 rounded text-[10px] font-extrabold border transition ${
+                    selectedElement === 'auto' ? 'bg-amber-400 text-black border-amber-200 shadow' : 'bg-black/60 text-amber-300 border-amber-500/30'
+                  }`}
+                >
+                  🔄 Auto
+                </button>
               </div>
 
               <div className="w-[1px] h-4 bg-white/20 my-auto" />
@@ -1138,8 +1236,12 @@ export const GameStage: React.FC<GameStageProps> = ({
                   { id: 'octagon', label: '🛑 Octágono' },
                   { id: 'diamond', label: '🔷 Diamante' },
                 ].map((shapeOpt) => {
-                  const targetEl = selectedElement === 'turbo' ? 'turbo' : 'spin';
-                  const currentShape = targetEl === 'turbo' ? (adminConfig.turboShape || 'pill') : (adminConfig.spinShape || 'circle');
+                  const targetEl = selectedElement === 'turbo' ? 'turbo' : selectedElement === 'auto' ? 'auto' : 'spin';
+                  const currentShape = targetEl === 'turbo' 
+                    ? (adminConfig.turboShape || 'pill') 
+                    : targetEl === 'auto' 
+                    ? (adminConfig.autoShape || 'pill') 
+                    : (adminConfig.spinShape || 'circle');
                   const isActive = currentShape === shapeOpt.id;
                   return (
                     <button
@@ -1150,6 +1252,8 @@ export const GameStage: React.FC<GameStageProps> = ({
                         if (onUpdateAdminConfig) {
                           if (targetEl === 'turbo') {
                             onUpdateAdminConfig({ turboShape: shapeOpt.id as any });
+                          } else if (targetEl === 'auto') {
+                            onUpdateAdminConfig({ autoShape: shapeOpt.id as any });
                           } else {
                             onUpdateAdminConfig({ spinShape: shapeOpt.id as any });
                           }

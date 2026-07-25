@@ -44,7 +44,7 @@ export const SlotReel: React.FC<SlotReelProps> = ({
   }, [resultSymbols, isSpinning, isReelSpinning]);
 
   useEffect(() => {
-    const loopDuration = spinStyle === 'turbo' ? 0.12 : spinStyle === 'cascade' ? 0.22 : 0.3;
+    const loopDuration = spinStyle === 'turbo' ? 0.20 : spinStyle === 'cascade' ? 0.28 : 0.38;
 
     if (isReelSpinning) {
       controls.start({
@@ -73,18 +73,18 @@ export const SlotReel: React.FC<SlotReelProps> = ({
           onLandingComplete?.();
         });
       } else if (spinStyle === 'turbo') {
-        controls.set({ y: -15 });
+        controls.set({ y: -20 });
         controls.start({
           y: 0,
-          transition: { type: "tween", duration: 0.08, ease: "easeOut" }
+          transition: { type: "tween", duration: 0.12, ease: "easeOut" }
         }).then(() => {
           onLandingComplete?.();
         });
       } else {
-        controls.set({ y: -35 });
+        controls.set({ y: -45 });
         controls.start({
           y: 0,
-          transition: { type: "spring", stiffness: 380, damping: 22 }
+          transition: { type: "spring", stiffness: 320, damping: 20 }
         }).then(() => {
           onLandingComplete?.();
         });
