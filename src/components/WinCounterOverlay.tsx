@@ -109,7 +109,7 @@ export const WinCounterOverlay: React.FC<WinCounterOverlayProps> = ({
             backgroundSize: bgImage ? 'cover' : undefined,
             backgroundPosition: bgImage ? 'center' : undefined,
           }}
-          className={`relative cursor-pointer px-5 py-2.5 sm:px-8 sm:py-3.5 rounded-2xl border-2 flex flex-col items-center justify-center shadow-[0_0_50px_rgba(234,179,8,0.8)] backdrop-blur-xl ${
+          className={`relative cursor-pointer px-8 py-4 sm:px-12 sm:py-6 rounded-3xl border-4 flex flex-col items-center justify-center shadow-[0_0_60px_rgba(234,179,8,0.9)] backdrop-blur-xl ${
             !bgColor && !bgImage
               ? isBigWin
                 ? 'bg-gradient-to-r from-amber-950 via-yellow-600 to-amber-950 border-yellow-300 text-white'
@@ -118,20 +118,20 @@ export const WinCounterOverlay: React.FC<WinCounterOverlayProps> = ({
           }`}
         >
           {/* Header Title */}
-          <div className="flex items-center gap-2 mb-0.5">
-            <Trophy className={`w-4 h-4 sm:w-5 sm:h-5 ${isBigWin ? 'text-yellow-300 animate-spin' : 'text-emerald-300'}`} />
-            <span className={`text-xs sm:text-sm font-black uppercase tracking-widest ${isBigWin ? 'text-yellow-200' : 'text-emerald-200'}`}>
+          <div className="flex items-center gap-3 mb-1">
+            <Trophy className={`w-7 h-7 sm:w-9 sm:h-9 ${isBigWin ? 'text-yellow-300 animate-spin' : 'text-emerald-300'}`} />
+            <span className={`text-lg sm:text-2xl font-black uppercase tracking-widest ${isBigWin ? 'text-yellow-200' : 'text-emerald-200'}`}>
               {isBigWin ? '🎉 SUPER GRANDE VITÓRIA! 🎉' : '✨ GANHO DA RODADA ✨'}
             </span>
-            <Sparkles className="w-4 h-4 text-yellow-300" />
+            <Sparkles className="w-7 h-7 text-yellow-300" />
           </div>
 
           {/* Animated Money Counter */}
           <div 
             style={{ color: textColor ? textColor : undefined }}
-            className="flex items-baseline gap-1 font-mono font-black text-2xl sm:text-4xl text-yellow-300 drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)] tracking-tight"
+            className="flex items-baseline gap-2 font-mono font-black text-4xl sm:text-6xl text-yellow-300 drop-shadow-[0_4px_12px_rgba(0,0,0,0.95)] tracking-tight"
           >
-            <span className="text-lg sm:text-2xl text-amber-200">R$</span>
+            <span className="text-2xl sm:text-4xl text-amber-200">R$</span>
             <span>
               {displayValue.toLocaleString('pt-BR', {
                 minimumFractionDigits: 2,
@@ -141,7 +141,7 @@ export const WinCounterOverlay: React.FC<WinCounterOverlayProps> = ({
           </div>
 
           {/* Subtle click to dismiss hint */}
-          <span className="text-[9px] text-yellow-100/70 font-semibold mt-0.5 uppercase tracking-wider">
+          <span className="text-xs sm:text-sm text-yellow-100/80 font-bold mt-1 uppercase tracking-wider">
             Clique para fechar
           </span>
         </div>

@@ -571,18 +571,18 @@ export const GameStage: React.FC<GameStageProps> = ({
   const getTurboShapeClasses = (shape?: string) => {
     switch (shape) {
       case 'circle':
-        return 'w-16 h-16 rounded-full p-0 flex flex-col items-center justify-center text-xs font-black';
+        return 'w-24 h-24 sm:w-28 sm:h-28 rounded-full p-0 flex flex-col items-center justify-center text-base sm:text-lg font-black';
       case 'pill':
-        return 'px-6 py-3 rounded-full flex items-center gap-2.5 font-black text-sm sm:text-base';
+        return 'px-8 py-4 sm:px-10 sm:py-5 rounded-full flex items-center gap-3 font-black text-xl sm:text-2xl';
       case 'square':
-        return 'w-16 h-16 rounded-2xl p-0 flex flex-col items-center justify-center text-xs font-black';
+        return 'w-24 h-24 sm:w-28 sm:h-28 rounded-3xl p-0 flex flex-col items-center justify-center text-base sm:text-lg font-black';
       case 'octagon':
-        return 'px-5 py-3 [clip-path:polygon(20%_0%,80%_0%,100%_20%,100%_80%,80%_100%,20%_100%,0%_80%,0%_20%)] flex items-center gap-2.5 font-black text-sm sm:text-base';
+        return 'px-8 py-4 sm:px-10 sm:py-5 [clip-path:polygon(20%_0%,80%_0%,100%_20%,100%_80%,80%_100%,20%_100%,0%_80%,0%_20%)] flex items-center gap-3 font-black text-xl sm:text-2xl';
       case 'diamond':
-        return 'w-14 h-14 rotate-45 rounded-md p-0 flex items-center justify-center text-xs font-black my-2 mx-2';
+        return 'w-20 h-20 rotate-45 rounded-xl p-0 flex items-center justify-center text-base font-black my-2 mx-2';
       case 'rounded':
       default:
-        return 'px-5 py-3 rounded-2xl flex items-center gap-2.5 font-black text-sm sm:text-base';
+        return 'px-8 py-4 sm:px-10 sm:py-5 rounded-3xl flex items-center gap-3 font-black text-xl sm:text-2xl';
     }
   };
 
@@ -637,8 +637,8 @@ export const GameStage: React.FC<GameStageProps> = ({
           <div 
             style={{
               ...balanceStyle,
-              backgroundColor: adminConfig.balanceBgColor || 'rgba(0, 0, 0, 0.85)',
-              borderColor: adminConfig.balanceBorderColor || 'rgba(212, 175, 55, 0.6)',
+              backgroundColor: adminConfig.balanceBgColor || 'rgba(0, 0, 0, 0.88)',
+              borderColor: adminConfig.balanceBorderColor || 'rgba(212, 175, 55, 0.7)',
               backgroundImage: adminConfig.balanceBgImage ? `url(${adminConfig.balanceBgImage})` : undefined,
               backgroundSize: adminConfig.balanceBgImage ? 'cover' : undefined,
               backgroundPosition: adminConfig.balanceBgImage ? 'center' : undefined,
@@ -649,7 +649,7 @@ export const GameStage: React.FC<GameStageProps> = ({
             }}
             onMouseDown={(e) => handleMouseDown(e, 'balance', adminConfig.balanceLeft ?? 3, adminConfig.balanceTop ?? 3)}
             onTouchStart={(e) => handleMouseDown(e, 'balance', adminConfig.balanceLeft ?? 3, adminConfig.balanceTop ?? 3)}
-            className={`flex items-center gap-3.5 backdrop-blur-md px-6 py-3 rounded-2xl border-2 shadow-2xl transition-shadow cursor-pointer ${
+            className={`flex items-center gap-4 backdrop-blur-md px-8 py-4 rounded-3xl border-2 sm:border-4 shadow-2xl transition-shadow cursor-pointer ${
               isEditing && selectedElement === 'balance' ? 'ring-4 ring-amber-400 border-amber-300' : ''
             }`}
           >
@@ -674,12 +674,12 @@ export const GameStage: React.FC<GameStageProps> = ({
                 </div>
               </>
             )}
-            <Coins className="w-8 h-8 text-yellow-400 shrink-0 drop-shadow-[0_0_10px_rgba(250,204,21,0.7)]" />
+            <Coins className="w-12 h-12 text-yellow-400 shrink-0 drop-shadow-[0_0_15px_rgba(250,204,21,0.8)]" />
             <div className="flex flex-col">
-              <span className="text-xs sm:text-sm text-yellow-400 font-extrabold uppercase tracking-wider">Saldo</span>
+              <span className="text-sm sm:text-base md:text-lg text-yellow-400 font-extrabold uppercase tracking-widest">Saldo</span>
               <span 
                 style={{ color: adminConfig.balanceTextColor || '#ffffff' }}
-                className="text-2xl sm:text-3xl font-black font-mono tracking-tight"
+                className="text-3xl sm:text-4xl md:text-5xl font-black font-mono tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]"
               >
                 R$ {gameState.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </span>
@@ -692,8 +692,8 @@ export const GameStage: React.FC<GameStageProps> = ({
           <div 
             style={{
               ...betStyle,
-              backgroundColor: adminConfig.betBgColor || 'rgba(0, 0, 0, 0.85)',
-              borderColor: adminConfig.betBorderColor || 'rgba(212, 175, 55, 0.6)',
+              backgroundColor: adminConfig.betBgColor || 'rgba(0, 0, 0, 0.88)',
+              borderColor: adminConfig.betBorderColor || 'rgba(212, 175, 55, 0.7)',
               backgroundImage: adminConfig.betBgImage ? `url(${adminConfig.betBgImage})` : undefined,
               backgroundSize: adminConfig.betBgImage ? 'cover' : undefined,
               backgroundPosition: adminConfig.betBgImage ? 'center' : undefined,
@@ -704,7 +704,7 @@ export const GameStage: React.FC<GameStageProps> = ({
             }}
             onMouseDown={(e) => handleMouseDown(e, 'bet', adminConfig.betLeft ?? 55, adminConfig.betTop ?? 3)}
             onTouchStart={(e) => handleMouseDown(e, 'bet', adminConfig.betLeft ?? 55, adminConfig.betTop ?? 3)}
-            className={`flex items-center backdrop-blur-md px-5 py-2.5 rounded-2xl border-2 gap-3.5 transition-shadow cursor-pointer ${
+            className={`flex items-center backdrop-blur-md px-7 py-3.5 rounded-3xl border-2 sm:border-4 gap-4 transition-shadow cursor-pointer ${
               isEditing && selectedElement === 'bet' ? 'ring-4 ring-amber-400 border-amber-300' : ''
             }`}
           >
@@ -736,15 +736,15 @@ export const GameStage: React.FC<GameStageProps> = ({
                 onBetChange(-5);
               }}
               disabled={gameState.isSpinning}
-              className="w-11 h-11 rounded-xl bg-amber-500/20 hover:bg-amber-400 hover:text-black flex items-center justify-center text-amber-300 font-black border border-amber-400/40 disabled:opacity-50 transition cursor-pointer shadow-md active:scale-90"
+              className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-amber-500/25 hover:bg-amber-400 hover:text-black flex items-center justify-center text-amber-300 font-black border-2 border-amber-400/50 disabled:opacity-50 transition cursor-pointer shadow-lg active:scale-90"
             >
-              <Minus className="w-6 h-6 stroke-[3]" />
+              <Minus className="w-8 h-8 stroke-[3.5]" />
             </button>
             <div className="flex flex-col items-center px-2">
-              <span className="text-xs sm:text-sm text-amber-300 uppercase font-extrabold tracking-wider">Aposta</span>
+              <span className="text-sm sm:text-base md:text-lg text-amber-300 uppercase font-extrabold tracking-widest">Aposta</span>
               <span 
                 style={{ color: adminConfig.betTextColor || '#fde073' }}
-                className="text-2xl sm:text-3xl font-black font-mono tracking-tight"
+                className="text-3xl sm:text-4xl md:text-5xl font-black font-mono tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]"
               >
                 R$ {gameState.bet.toFixed(2)}
               </span>
@@ -756,9 +756,9 @@ export const GameStage: React.FC<GameStageProps> = ({
                 onBetChange(5);
               }}
               disabled={gameState.isSpinning}
-              className="w-11 h-11 rounded-xl bg-amber-500/20 hover:bg-amber-400 hover:text-black flex items-center justify-center text-amber-300 font-black border border-amber-400/40 disabled:opacity-50 transition cursor-pointer shadow-md active:scale-90"
+              className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-amber-500/25 hover:bg-amber-400 hover:text-black flex items-center justify-center text-amber-300 font-black border-2 border-amber-400/50 disabled:opacity-50 transition cursor-pointer shadow-lg active:scale-90"
             >
-              <Plus className="w-6 h-6 stroke-[3]" />
+              <Plus className="w-8 h-8 stroke-[3.5]" />
             </button>
           </div>
         )}
@@ -768,8 +768,8 @@ export const GameStage: React.FC<GameStageProps> = ({
           <div 
             style={{
               ...winBoxStyle,
-              backgroundColor: adminConfig.winBoxBgColor || 'rgba(6, 78, 59, 0.85)',
-              borderColor: adminConfig.winBoxBorderColor || 'rgba(52, 211, 153, 0.8)',
+              backgroundColor: adminConfig.winBoxBgColor || 'rgba(6, 78, 59, 0.9)',
+              borderColor: adminConfig.winBoxBorderColor || 'rgba(52, 211, 153, 0.85)',
               backgroundImage: adminConfig.winBoxBgImage ? `url(${adminConfig.winBoxBgImage})` : undefined,
               backgroundSize: adminConfig.winBoxBgImage ? 'cover' : undefined,
               backgroundPosition: adminConfig.winBoxBgImage ? 'center' : undefined,
@@ -780,7 +780,7 @@ export const GameStage: React.FC<GameStageProps> = ({
             }}
             onMouseDown={(e) => handleMouseDown(e, 'winBox', adminConfig.winBoxLeft ?? 30, adminConfig.winBoxTop ?? 3)}
             onTouchStart={(e) => handleMouseDown(e, 'winBox', adminConfig.winBoxLeft ?? 30, adminConfig.winBoxTop ?? 3)}
-            className={`flex items-center gap-3.5 backdrop-blur-md px-6 py-3 rounded-2xl border-2 shadow-2xl transition-shadow cursor-pointer ${
+            className={`flex items-center gap-4 backdrop-blur-md px-8 py-4 rounded-3xl border-2 sm:border-4 shadow-2xl transition-shadow cursor-pointer ${
               isEditing && selectedElement === 'winBox' ? 'ring-4 ring-amber-400 border-amber-300' : ''
             }`}
           >
@@ -805,12 +805,12 @@ export const GameStage: React.FC<GameStageProps> = ({
                 </div>
               </>
             )}
-            <Trophy className="w-8 h-8 text-emerald-400 shrink-0 drop-shadow-[0_0_10px_rgba(52,211,153,0.7)]" />
+            <Trophy className="w-12 h-12 text-emerald-400 shrink-0 drop-shadow-[0_0_15px_rgba(52,211,153,0.8)]" />
             <div className="flex flex-col">
-              <span className="text-xs sm:text-sm text-emerald-300 font-extrabold uppercase tracking-wider">Ganho</span>
+              <span className="text-sm sm:text-base md:text-lg text-emerald-300 font-extrabold uppercase tracking-widest">Ganho</span>
               <span 
                 style={{ color: adminConfig.winBoxTextColor || '#34d399' }}
-                className="text-2xl sm:text-3xl font-black font-mono tracking-tight"
+                className="text-3xl sm:text-4xl md:text-5xl font-black font-mono tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]"
               >
                 R$ {(gameState.win > 0 ? gameState.win : 25.00).toFixed(2)}
               </span>
@@ -1103,8 +1103,8 @@ export const GameStage: React.FC<GameStageProps> = ({
                   : 'bg-black/80 text-amber-400 border-amber-500/40 hover:bg-amber-950/80 hover:border-amber-400'
               }`}
             >
-              <div className={`flex items-center gap-1.5 ${adminConfig.turboShape === 'diamond' ? '-rotate-45' : ''}`}>
-                <Zap className={`w-4 h-4 ${adminConfig.spinStyle === 'turbo' || gameSettings?.turboMode ? 'fill-black text-black animate-pulse' : 'text-amber-400'}`} />
+              <div className={`flex items-center gap-2.5 ${adminConfig.turboShape === 'diamond' ? '-rotate-45' : ''}`}>
+                <Zap className={`w-7 h-7 sm:w-8 sm:h-8 ${adminConfig.spinStyle === 'turbo' || gameSettings?.turboMode ? 'fill-black text-black animate-pulse' : 'text-amber-400'}`} />
                 <span>TURBO</span>
               </div>
             </button>
@@ -1168,8 +1168,8 @@ export const GameStage: React.FC<GameStageProps> = ({
                   : 'bg-black/80 text-amber-400 border-amber-500/40 hover:bg-amber-950/80 hover:border-amber-400'
               }`}
             >
-              <div className={`flex items-center gap-1.5 ${adminConfig.autoShape === 'diamond' ? '-rotate-45' : ''}`}>
-                <RotateCw className={`w-4 h-4 ${gameSettings?.isAutoSpinning ? 'animate-spin text-black' : 'text-amber-400'}`} />
+              <div className={`flex items-center gap-2.5 ${adminConfig.autoShape === 'diamond' ? '-rotate-45' : ''}`}>
+                <RotateCw className={`w-7 h-7 sm:w-8 sm:h-8 ${gameSettings?.isAutoSpinning ? 'animate-spin text-black' : 'text-amber-400'}`} />
                 <span className="font-extrabold font-mono">
                   {gameSettings?.isAutoSpinning ? `AUTO (${gameSettings.autoSpinCount})` : 'AUTO'}
                 </span>

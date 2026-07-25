@@ -18,7 +18,7 @@ export const SlotSymbol: React.FC<SlotSymbolProps> = ({ type, isWinning, customI
   const zoomScale = (symbolConfig?.scale || 100) / 100;
 
   const getSymbolContent = () => {
-    const iconClasses = "w-6 h-6 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 transition-all";
+    const iconClasses = "w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 transition-all";
 
     if (imageUrl) {
       return (

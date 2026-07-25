@@ -100,7 +100,7 @@ export const SlotReel: React.FC<SlotReelProps> = ({
   const spinningColumn = Array.from({ length: 20 }).map((_, i) => {
     const sym = ALL_SYMBOLS[Math.floor(Math.random() * ALL_SYMBOLS.length)];
     return (
-      <div key={i} className="py-1 h-16 sm:h-20">
+      <div key={i} className="py-2 h-24 sm:h-32 flex items-center justify-center">
         <SlotSymbol 
           type={sym} 
           customImage={customSymbols?.[sym]} 
