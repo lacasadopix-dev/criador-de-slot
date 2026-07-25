@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme {
+  --color-gold-100: #fff4cc;
+  --color-gold-300: #fde073;
+  --color-gold-500: #d4af37;
+  --color-gold-700: #997a00;
+  --color-gold-900: #4d3d00;
+  
+  --color-wine-500: #720000;
+  --color-wine-700: #4a0404;
+  --color-wine-900: #2b0000;
+
+  --color-midnight-500: #1c2541;
+  --color-midnight-700: #0b132b;
+  --color-midnight-900: #050914;
+}
+
+@layer utilities {
+  .glass-panel {
+    background: rgba(5, 9, 20, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(212, 175, 55, 0.05);
+  }
+
+  .text-gold-gradient {
+    background: linear-gradient(to bottom, #fff4cc, #d4af37, #997a00);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+  }
+
+  .text-gold-glow {
+    color: #d4af37;
+    text-shadow: 0 0 10px rgba(212, 175, 55, 0.5), 0 0 20px rgba(212, 175, 55, 0.3);
+  }
+
+  .box-gold-glow {
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.4), inset 0 0 10px rgba(212, 175, 55, 0.2);
+  }
+}
+
+body {
+  background-color: #000;
+  color: #FDF5E6;
+  overflow: hidden;
+  user-select: none;
+}

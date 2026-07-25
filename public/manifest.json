@@ -1,0 +1,10 @@
+{
+  "short_name": "Fortune Kingdom",
+  "name": "Fortune Kingdom - OddsBet Games",
+  "icons": [],
+  "start_url": "/",
+  "background_color": "#050914",
+  "theme_color": "#050914",
+  "display": "standalone",
+  "orientation": "any"
+}

@@ -1,0 +1,8 @@
+{
+  "name": "Remix: criador de Slots",
+  "description": "AAA Premium Casino Slot Game - OddsBet Games",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
