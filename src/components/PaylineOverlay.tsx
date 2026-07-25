@@ -103,19 +103,20 @@ export const PaylineOverlay: React.FC<PaylineOverlayProps> = ({
     return null;
   }
 
-  const widthRatio = dimensions.width > 0 ? 1000 / dimensions.width : 1;
-  const heightRatio = dimensions.height > 0 ? 1000 / dimensions.height : 1;
+  const svgWidth = dimensions.width > 0 ? dimensions.width : 1000;
+  const svgHeight = dimensions.height > 0 ? dimensions.height : 1000;
+  const baseStrokeWidth = Math.max(4, Math.min(9, svgWidth / 90));
 
   return (
     <div ref={overlayRef} className="absolute inset-0 pointer-events-none z-30 w-full h-full">
       <svg 
         className="w-full h-full overflow-visible" 
-        viewBox="0 0 1000 1000" 
+        viewBox={`0 0 ${svgWidth} ${svgHeight}`} 
         preserveAspectRatio="none"
       >
         <defs>
           <filter id="glow-payline" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="8" result="blur" />
+            <feGaussianBlur stdDeviation="6" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
@@ -126,24 +127,24 @@ export const PaylineOverlay: React.FC<PaylineOverlayProps> = ({
         {winningPaylines.map((winLine, index) => {
           const { payline, positions, matchCount } = winLine;
           const lineColor = payline.color || '#f59e0b';
-          const strokeWidth = payline.strokeWidth || 12;
+          const strokeWidth = payline.strokeWidth ? Math.min(payline.strokeWidth, baseStrokeWidth * 1.5) : baseStrokeWidth;
 
           if (!positions || positions.length === 0) return null;
 
           const lineId = payline.id || String(index);
           const measuredPoints = coords[lineId];
 
-          // Convert coordinates to viewBox (1000x1000)
+          // Use direct pixel coordinates relative to slot machine container
           const points = positions.map((pos, pIdx) => {
             if (measuredPoints && measuredPoints[pIdx]) {
               return {
-                x: measuredPoints[pIdx].x * widthRatio,
-                y: measuredPoints[pIdx].y * heightRatio,
+                x: measuredPoints[pIdx].x,
+                y: measuredPoints[pIdx].y,
               };
             }
             return {
-              x: ((pos.col + 0.5) / numReels) * 1000,
-              y: ((pos.row + 0.5) / numRows) * 1000,
+              x: ((pos.col + 0.5) / numReels) * svgWidth,
+              y: ((pos.row + 0.5) / numRows) * svgHeight,
             };
           });
 
@@ -161,6 +162,11 @@ export const PaylineOverlay: React.FC<PaylineOverlayProps> = ({
           const drawAnimationKey = `${lineId}-${positions.map(p => `${p.col}_${p.row}`).join('-')}`;
           const animationDuration = 0.85;
 
+          // Safe badge coordinates inside canvas bounds
+          const badgeHalfW = 22;
+          const leftBadgeX = Math.max(badgeHalfW + 6, Math.min(svgWidth - badgeHalfW - 6, firstPoint.x - 28));
+          const rightBadgeX = Math.max(badgeHalfW + 6, Math.min(svgWidth - badgeHalfW - 6, lastPoint.x + 28));
+
           return (
             <g key={drawAnimationKey} className="transition-all duration-300">
               {/* 1. Outer Glow Path - Animated Drawing */}
@@ -168,7 +174,7 @@ export const PaylineOverlay: React.FC<PaylineOverlayProps> = ({
                 d={pathD}
                 fill="none"
                 stroke={lineColor}
-                strokeWidth={strokeWidth * 2.5}
+                strokeWidth={strokeWidth * 2.2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 filter="url(#glow-payline)"
@@ -195,19 +201,19 @@ export const PaylineOverlay: React.FC<PaylineOverlayProps> = ({
                 d={pathD}
                 fill="none"
                 stroke="#ffffff"
-                strokeWidth={Math.max(3, strokeWidth * 0.45)}
+                strokeWidth={Math.max(2, strokeWidth * 0.45)}
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeDasharray="20 12"
+                strokeDasharray="14 8"
                 initial={{ pathLength: 0, strokeDashoffset: 0 }}
-                animate={{ pathLength: 1, strokeDashoffset: [-120, 0] }}
+                animate={{ pathLength: 1, strokeDashoffset: [-80, 0] }}
                 transition={{
                   pathLength: { duration: animationDuration, ease: [0.25, 0.1, 0.25, 1] },
                   strokeDashoffset: { duration: 1.0, repeat: Infinity, ease: 'linear' }
                 }}
               />
 
-              {/* 4. Glowing Connection Dots at Winning Symbol Centers (Pop up in sequence as line reaches them) */}
+              {/* 4. Glowing Connection Dots at Winning Symbol Centers */}
               {points.map((pt, pIdx) => {
                 const dotDelay = (pIdx / Math.max(1, points.length - 1)) * (animationDuration * 0.8);
                 return (
@@ -221,7 +227,7 @@ export const PaylineOverlay: React.FC<PaylineOverlayProps> = ({
                     <motion.circle
                       cx={pt.x}
                       cy={pt.y}
-                      r={strokeWidth * 2.2}
+                      r={strokeWidth * 2.0}
                       fill={lineColor}
                       opacity="0.3"
                       animate={{ scale: [0.85, 1.35, 0.85], opacity: [0.6, 0.15, 0.6] }}
@@ -231,71 +237,71 @@ export const PaylineOverlay: React.FC<PaylineOverlayProps> = ({
                     <circle
                       cx={pt.x}
                       cy={pt.y}
-                      r={Math.max(6, strokeWidth * 0.75)}
+                      r={Math.max(5, strokeWidth * 0.7)}
                       fill={lineColor}
                       stroke="#ffffff"
-                      strokeWidth="3"
+                      strokeWidth="2.5"
                       className="drop-shadow-[0_0_8px_rgba(255,255,255,0.9)]"
                     />
                   </motion.g>
                 );
               })}
 
-              {/* 5. Line Identifier Badge at Left (Pops when line drawing reaches start) */}
+              {/* 5. Line Identifier Badge at Left */}
               <motion.g 
-                transform={`translate(${Math.max(12, firstPoint.x - 45)}, ${firstPoint.y})`}
+                transform={`translate(${leftBadgeX}, ${firstPoint.y})`}
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.1, duration: 0.35, type: 'spring', stiffness: 300 }}
               >
                 <rect
-                  x="-26"
-                  y="-13"
-                  width="52"
-                  height="26"
-                  rx="13"
+                  x="-22"
+                  y="-11"
+                  width="44"
+                  height="22"
+                  rx="11"
                   fill="#000000"
                   stroke={lineColor}
-                  strokeWidth="2.5"
-                  className="drop-shadow-[0_0_12px_rgba(0,0,0,0.95)]"
+                  strokeWidth="2"
+                  className="drop-shadow-[0_0_10px_rgba(0,0,0,0.95)]"
                 />
                 <text
                   x="0"
-                  y="4"
+                  y="3.5"
                   textAnchor="middle"
                   fill="#ffffff"
-                  fontSize="12"
+                  fontSize="11"
                   fontWeight="900"
                 >
                   L{payline.id}
                 </text>
               </motion.g>
 
-              {/* 6. Match Multiplier Badge at Right (Pops when line finishes drawing) */}
+              {/* 6. Match Multiplier Badge at Right */}
               {lastPoint && (
                 <motion.g 
-                  transform={`translate(${Math.min(988, lastPoint.x + 45)}, ${lastPoint.y})`}
+                  transform={`translate(${rightBadgeX}, ${lastPoint.y})`}
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: animationDuration, duration: 0.4, type: 'spring', stiffness: 350 }}
                 >
                   <rect
-                    x="-26"
-                    y="-13"
-                    width="52"
-                    height="26"
-                    rx="13"
+                    x="-22"
+                    y="-11"
+                    width="44"
+                    height="22"
+                    rx="11"
                     fill="#000000"
                     stroke={lineColor}
-                    strokeWidth="2.5"
-                    className="drop-shadow-[0_0_12px_rgba(0,0,0,0.95)]"
+                    strokeWidth="2"
+                    className="drop-shadow-[0_0_10px_rgba(0,0,0,0.95)]"
                   />
                   <text
                     x="0"
-                    y="4"
+                    y="3.5"
                     textAnchor="middle"
                     fill="#fde047"
-                    fontSize="12"
+                    fontSize="11"
                     fontWeight="900"
                   >
                     {matchCount}x

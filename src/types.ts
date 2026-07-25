@@ -191,7 +191,7 @@ export interface AdminConfig {
   // Reel Frame & Border options
   showReelBorders?: boolean; // default false
   showReelBg?: boolean; // default false
-  spinStyle?: 'smooth' | 'turbo' | 'cascade'; // 3 types of slot rolling animation
+  spinStyle?: 'smooth' | 'cascade' | 'random' | 'zoom' | 'turbo'; // Slot rolling animation mode
 
   // Custom Symbol Images (SymbolType -> URL/DataURI)
   customSymbols: Partial<Record<SymbolType, string>>;

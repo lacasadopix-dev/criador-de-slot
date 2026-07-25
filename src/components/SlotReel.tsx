@@ -12,7 +12,7 @@ interface SlotReelProps {
   showReelBorders?: boolean;
   showReelBg?: boolean;
   individualPosition?: { offsetX: number; offsetY: number; scale: number };
-  spinStyle?: 'smooth' | 'turbo' | 'cascade';
+  spinStyle?: 'smooth' | 'cascade' | 'random' | 'zoom' | 'turbo';
   winningRows?: Set<number>;
   colIndex?: number;
   onLandingComplete?: () => void;
@@ -31,7 +31,7 @@ export const SlotReel: React.FC<SlotReelProps> = ({
   individualPosition,
   spinStyle = 'smooth',
   winningRows,
-  colIndex,
+  colIndex = 0,
   onLandingComplete,
 }) => {
   const [currentSymbols, setCurrentSymbols] = useState<SymbolType[]>(resultSymbols || ['Castle', 'Sword', 'Diamond']);
@@ -44,20 +44,64 @@ export const SlotReel: React.FC<SlotReelProps> = ({
   }, [resultSymbols, isSpinning, isReelSpinning]);
 
   useEffect(() => {
-    const loopDuration = spinStyle === 'turbo' ? 0.20 : spinStyle === 'cascade' ? 0.28 : 0.38;
+    const isOddCol = colIndex % 2 !== 0;
 
     if (isReelSpinning) {
-      controls.start({
-        y: [0, -800],
-        transition: {
-          y: {
+      if (spinStyle === 'cascade') {
+        controls.start({
+          y: [-800, 0],
+          transition: {
             repeat: Infinity,
-            repeatType: "loop",
-            duration: loopDuration,
-            ease: spinStyle === 'cascade' ? "easeIn" : "linear",
+            repeatType: 'loop',
+            duration: 0.28,
+            ease: 'easeIn',
           }
-        }
-      });
+        });
+      } else if (spinStyle === 'random') {
+        // Alternating directions: even columns down, odd columns up
+        controls.start({
+          y: isOddCol ? [0, 800] : [0, -800],
+          transition: {
+            repeat: Infinity,
+            repeatType: 'loop',
+            duration: 0.32,
+            ease: 'linear',
+          }
+        });
+      } else if (spinStyle === 'zoom') {
+        // Zoom pulse expand animation
+        controls.start({
+          scale: [0.85, 1.12, 0.85],
+          opacity: [0.6, 1, 0.6],
+          transition: {
+            repeat: Infinity,
+            repeatType: 'reverse',
+            duration: 0.25,
+            ease: 'easeInOut',
+          }
+        });
+      } else if (spinStyle === 'turbo') {
+        controls.start({
+          y: [0, -800],
+          transition: {
+            repeat: Infinity,
+            repeatType: 'loop',
+            duration: 0.18,
+            ease: 'linear',
+          }
+        });
+      } else {
+        // 'smooth' default
+        controls.start({
+          y: [0, -800],
+          transition: {
+            repeat: Infinity,
+            repeatType: 'loop',
+            duration: 0.36,
+            ease: 'linear',
+          }
+        });
+      }
     } else {
       controls.stop();
       if (resultSymbols && resultSymbols.length > 0) {
@@ -65,32 +109,51 @@ export const SlotReel: React.FC<SlotReelProps> = ({
       }
 
       if (spinStyle === 'cascade') {
-        controls.set({ y: -200 });
+        controls.set({ y: -220, scale: 1, opacity: 1 });
         controls.start({
           y: 0,
-          transition: { type: "spring", stiffness: 220, damping: 12, mass: 1.1 }
+          transition: { type: 'spring', stiffness: 220, damping: 12, mass: 1.1 }
+        }).then(() => {
+          onLandingComplete?.();
+        });
+      } else if (spinStyle === 'random') {
+        const startY = isOddCol ? 120 : -120;
+        controls.set({ y: startY, scale: 1, opacity: 1 });
+        controls.start({
+          y: 0,
+          transition: { type: 'spring', stiffness: 280, damping: 16 }
+        }).then(() => {
+          onLandingComplete?.();
+        });
+      } else if (spinStyle === 'zoom') {
+        controls.set({ scale: 0.3, opacity: 0, y: 0 });
+        controls.start({
+          scale: 1,
+          opacity: 1,
+          transition: { type: 'spring', stiffness: 350, damping: 18 }
         }).then(() => {
           onLandingComplete?.();
         });
       } else if (spinStyle === 'turbo') {
-        controls.set({ y: -20 });
+        controls.set({ y: -20, scale: 1, opacity: 1 });
         controls.start({
           y: 0,
-          transition: { type: "tween", duration: 0.12, ease: "easeOut" }
+          transition: { type: 'tween', duration: 0.10, ease: 'easeOut' }
         }).then(() => {
           onLandingComplete?.();
         });
       } else {
-        controls.set({ y: -45 });
+        // smooth
+        controls.set({ y: -45, scale: 1, opacity: 1 });
         controls.start({
           y: 0,
-          transition: { type: "spring", stiffness: 320, damping: 20 }
+          transition: { type: 'spring', stiffness: 320, damping: 20 }
         }).then(() => {
           onLandingComplete?.();
         });
       }
     }
-  }, [isReelSpinning, resultSymbols, controls, spinStyle, onLandingComplete]);
+  }, [isReelSpinning, resultSymbols, controls, spinStyle, colIndex, onLandingComplete]);
 
   const transformStyle: React.CSSProperties = individualPosition ? {
     transform: `translate(${individualPosition.offsetX || 0}%, ${individualPosition.offsetY || 0}%) scale(${(individualPosition.scale || 100) / 100})`,

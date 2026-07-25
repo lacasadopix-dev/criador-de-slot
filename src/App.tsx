@@ -4,6 +4,7 @@ import { AdminPanelModal } from './components/AdminPanelModal';
 import { AutoSpinModal } from './components/AutoSpinModal';
 import { GameStage } from './components/GameStage';
 import { GameState, SymbolType, AdminConfig, GameSettings, SpinHistoryItem, Payline, BonusConfig } from './types';
+import { calculatePaylinePayouts } from './utils/paylines';
 
 const ALL_SYMBOLS: SymbolType[] = ['King', 'Queen', 'Crown', 'Lion', 'Sword', 'Shield', 'Castle', 'Diamond', 'Coin', 'Dragon'];
 
@@ -215,10 +216,28 @@ export default function App() {
       }
     }
 
-    const winAmount = isWin ? currentBet * winMultiplier : 0;
     const resultGrid = isWin 
       ? generateWinningGrid(isBigWin, adminConfig.numReels || 5, adminConfig.numRows || 3, adminConfig.paylines) 
       : generateRandomGrid(adminConfig.numReels || 5, adminConfig.numRows || 3);
+
+    // Calculate real mathematical payout based on grid symbols & payline multipliers
+    const paylineCalc = calculatePaylinePayouts(
+      resultGrid,
+      adminConfig.paylines,
+      currentBet,
+      adminConfig.symbolPayouts,
+      adminConfig.numReels || 5,
+      adminConfig.numRows || 3
+    );
+
+    let finalWinAmount = paylineCalc.totalWin;
+    let finalWinMultiplier = paylineCalc.totalMultiplier;
+
+    // Fallback if winning intent was triggered but payline calc yielded zero
+    if (isWin && finalWinAmount === 0) {
+      finalWinAmount = Math.round(currentBet * (winMultiplier || 2) * 100) / 100;
+      finalWinMultiplier = Math.round((finalWinAmount / currentBet) * 100) / 100;
+    }
 
     // Reset forcedOutcome after use
     if (adminConfig.forcedOutcome !== 'none') {
@@ -227,10 +246,10 @@ export default function App() {
 
     // Store pending outcome
     pendingResultRef.current = {
-      winAmount,
-      isBigWin,
+      winAmount: finalWinAmount,
+      isBigWin: isBigWin || finalWinMultiplier >= 15,
       currentBet,
-      winMultiplier,
+      winMultiplier: finalWinMultiplier,
       resultGrid,
     };
 

@@ -12,7 +12,7 @@ interface SlotMachineProps {
   showReelBorders?: boolean;
   showReelBg?: boolean;
   individualReelPositions?: Record<number, ReelPosition>;
-  spinStyle?: 'smooth' | 'turbo' | 'cascade';
+  spinStyle?: 'smooth' | 'cascade' | 'random' | 'zoom' | 'turbo';
   paylines?: Payline[];
   numReels?: number;
   numRows?: number;
@@ -47,13 +47,29 @@ export const SlotMachine: React.FC<SlotMachineProps> = ({
     if (isSpinning) {
       setReelsSpinning(Array(effectiveNumReels).fill(true));
 
-      const baseSpinTime = spinStyle === 'turbo' ? 500 : spinStyle === 'cascade' ? 750 : 1100;
-      const reelDelay = spinStyle === 'turbo' ? 120 : spinStyle === 'cascade' ? 220 : 220;
+      let baseSpinTime = 1000;
+      let reelDelay = 220;
+
+      if (spinStyle === 'turbo') {
+        baseSpinTime = 400;
+        reelDelay = 100;
+      } else if (spinStyle === 'cascade') {
+        baseSpinTime = 700;
+        reelDelay = 200;
+      } else if (spinStyle === 'zoom') {
+        baseSpinTime = 600;
+        reelDelay = 180;
+      } else if (spinStyle === 'random') {
+        baseSpinTime = 800;
+        reelDelay = 180;
+      }
 
       const timers: NodeJS.Timeout[] = [];
 
       for (let col = 0; col < effectiveNumReels; col++) {
-        const delay = baseSpinTime + col * reelDelay;
+        // For 'random', we can vary the delay order
+        const colOrder = spinStyle === 'random' ? (col % 2 === 0 ? col : effectiveNumReels - col) : col;
+        const delay = baseSpinTime + Math.abs(colOrder) * reelDelay;
         const timer = setTimeout(() => {
           setReelsSpinning(prev => {
             const next = [...prev];

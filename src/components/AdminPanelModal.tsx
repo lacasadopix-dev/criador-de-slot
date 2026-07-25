@@ -913,6 +913,121 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         </div>
                       </div>
 
+                      {/* Spin Style Modes Selector */}
+                      <div className="p-3.5 bg-black/60 rounded-xl border border-amber-500/40 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-black text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                            <RotateCcw className="w-4 h-4 text-amber-400" />
+                            Modos de Rolagem dos Slots (Animação Ativa)
+                          </label>
+                          <span className="text-[11px] text-amber-400 font-bold bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30">
+                            Ativo: {
+                              adminConfig.spinStyle === 'cascade' ? 'Opção 2 (Cascata)' :
+                              adminConfig.spinStyle === 'random' ? 'Opção 3 (Aleatório)' :
+                              adminConfig.spinStyle === 'zoom' ? 'Opção 4 (Zoom Pulso)' :
+                              adminConfig.spinStyle === 'turbo' ? 'Opção 5 (Super Turbo)' : 'Opção 1 (Padrão)'
+                            }
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                          {/* Mode 1 */}
+                          <button
+                            type="button"
+                            onClick={() => onUpdateAdminConfig({ spinStyle: 'smooth' })}
+                            className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                              adminConfig.spinStyle === 'smooth' || !adminConfig.spinStyle
+                                ? 'bg-amber-500/25 border-amber-400 text-amber-200 shadow-[0_0_15px_rgba(245,158,11,0.3)]'
+                                : 'bg-black/50 border-white/10 text-gray-400 hover:border-amber-400/40 hover:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-extrabold uppercase text-amber-300">1. Padrão (Cima/Baixo)</span>
+                              {(adminConfig.spinStyle === 'smooth' || !adminConfig.spinStyle) && <Check className="w-4 h-4 text-amber-400" />}
+                            </div>
+                            <p className="text-[10px] text-gray-300 leading-tight">
+                              Roda cada coluna de cima para baixo, da esquerda para a direita em sequência.
+                            </p>
+                          </button>
+
+                          {/* Mode 2 */}
+                          <button
+                            type="button"
+                            onClick={() => onUpdateAdminConfig({ spinStyle: 'cascade' })}
+                            className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                              adminConfig.spinStyle === 'cascade'
+                                ? 'bg-amber-500/25 border-amber-400 text-amber-200 shadow-[0_0_15px_rgba(245,158,11,0.3)]'
+                                : 'bg-black/50 border-white/10 text-gray-400 hover:border-amber-400/40 hover:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-extrabold uppercase text-amber-300">2. Cascata (Avalanche)</span>
+                              {adminConfig.spinStyle === 'cascade' && <Check className="w-4 h-4 text-amber-400" />}
+                            </div>
+                            <p className="text-[10px] text-gray-300 leading-tight">
+                              Os símbolos caem do topo como em cascata com física de impacto mola.
+                            </p>
+                          </button>
+
+                          {/* Mode 3 */}
+                          <button
+                            type="button"
+                            onClick={() => onUpdateAdminConfig({ spinStyle: 'random' })}
+                            className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                              adminConfig.spinStyle === 'random'
+                                ? 'bg-amber-500/25 border-amber-400 text-amber-200 shadow-[0_0_15px_rgba(245,158,11,0.3)]'
+                                : 'bg-black/50 border-white/10 text-gray-400 hover:border-amber-400/40 hover:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-extrabold uppercase text-amber-300">3. Direções Alternadas</span>
+                              {adminConfig.spinStyle === 'random' && <Check className="w-4 h-4 text-amber-400" />}
+                            </div>
+                            <p className="text-[10px] text-gray-300 leading-tight">
+                              Rola com direções alternadas (cima-baixo e baixo-cima aleatório).
+                            </p>
+                          </button>
+
+                          {/* Mode 4 */}
+                          <button
+                            type="button"
+                            onClick={() => onUpdateAdminConfig({ spinStyle: 'zoom' })}
+                            className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                              adminConfig.spinStyle === 'zoom'
+                                ? 'bg-amber-500/25 border-amber-400 text-amber-200 shadow-[0_0_15px_rgba(245,158,11,0.3)]'
+                                : 'bg-black/50 border-white/10 text-gray-400 hover:border-amber-400/40 hover:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-extrabold uppercase text-amber-300">4. Zoom & Pulso Glow</span>
+                              {adminConfig.spinStyle === 'zoom' && <Check className="w-4 h-4 text-amber-400" />}
+                            </div>
+                            <p className="text-[10px] text-gray-300 leading-tight">
+                              Giro com pulso expansivo de zoom e revelação com efeito luminoso.
+                            </p>
+                          </button>
+
+                          {/* Mode 5 */}
+                          <button
+                            type="button"
+                            onClick={() => onUpdateAdminConfig({ spinStyle: 'turbo' })}
+                            className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                              adminConfig.spinStyle === 'turbo'
+                                ? 'bg-amber-500/25 border-amber-400 text-amber-200 shadow-[0_0_15px_rgba(245,158,11,0.3)]'
+                                : 'bg-black/50 border-white/10 text-gray-400 hover:border-amber-400/40 hover:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-extrabold uppercase text-amber-300">5. Super Turbo Snap</span>
+                              {adminConfig.spinStyle === 'turbo' && <Check className="w-4 h-4 text-amber-400" />}
+                            </div>
+                            <p className="text-[10px] text-gray-300 leading-tight">
+                              Giro ultra rápido com parada imediata e sem atrasos.
+                            </p>
+                          </button>
+                        </div>
+                      </div>
+
                       {/* Presets */}
                       <div className="pt-2">
                         <span className="text-[11px] font-bold text-gray-300 block mb-2">Presets Rápidos do Motor:</span>
