@@ -30,6 +30,8 @@ interface QuickScaleToolbarProps {
   currentScale: number;
   currentLeft?: number;
   currentTop?: number;
+  currentWidth?: number;
+  currentHeight?: number;
   onUpdateScale: (elementId: string, newScale: number) => void;
   onUpdateAdminConfig?: (newConfig: Partial<AdminConfig>) => void;
 }
@@ -39,6 +41,8 @@ const QuickScaleToolbar: React.FC<QuickScaleToolbarProps> = ({
   currentScale,
   currentLeft,
   currentTop,
+  currentWidth,
+  currentHeight,
   onUpdateScale,
   onUpdateAdminConfig,
 }) => {
@@ -52,6 +56,12 @@ const QuickScaleToolbar: React.FC<QuickScaleToolbarProps> = ({
       [keyLeft]: newLeft,
       [keyTop]: newTop,
     } as any);
+  };
+
+  const nudgeDimension = (key: 'slotWidth' | 'slotHeight', dVal: number, currentVal: number) => {
+    if (!onUpdateAdminConfig) return;
+    const newVal = Math.max(10, Math.min(100, Math.round((currentVal + dVal) * 10) / 10));
+    onUpdateAdminConfig({ [key]: newVal });
   };
 
   return (
@@ -114,28 +124,86 @@ const QuickScaleToolbar: React.FC<QuickScaleToolbarProps> = ({
         </button>
       </div>
 
-      {/* Size/Scale Controls */}
+      {/* Width Control (Largura) if available */}
+      {currentWidth !== undefined && (
+        <div className="flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded-lg border border-white/10">
+          <span className="text-[10px] font-black text-amber-300 uppercase flex items-center gap-0.5">
+            <MoveHorizontal className="w-3 h-3 text-amber-400" />
+            <span>Larg:</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => nudgeDimension('slotWidth', -2, currentWidth)}
+            className="w-5 h-5 rounded bg-amber-500/20 hover:bg-amber-400 text-amber-300 hover:text-black font-extrabold text-xs flex items-center justify-center border border-amber-400/50 transition cursor-pointer active:scale-90"
+            title="Diminuir largura (-2%)"
+          >
+            -
+          </button>
+          <span className="text-xs font-mono font-bold text-amber-300 px-0.5">
+            {currentWidth}%
+          </span>
+          <button
+            type="button"
+            onClick={() => nudgeDimension('slotWidth', 2, currentWidth)}
+            className="w-5 h-5 rounded bg-amber-500/20 hover:bg-amber-400 text-amber-300 hover:text-black font-extrabold text-xs flex items-center justify-center border border-amber-400/50 transition cursor-pointer active:scale-90"
+            title="Aumentar largura (+2%)"
+          >
+            +
+          </button>
+        </div>
+      )}
+
+      {/* Height Control (Altura) if available */}
+      {currentHeight !== undefined && (
+        <div className="flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded-lg border border-white/10">
+          <span className="text-[10px] font-black text-amber-300 uppercase flex items-center gap-0.5">
+            <MoveVertical className="w-3 h-3 text-amber-400" />
+            <span>Alt:</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => nudgeDimension('slotHeight', -2, currentHeight)}
+            className="w-5 h-5 rounded bg-amber-500/20 hover:bg-amber-400 text-amber-300 hover:text-black font-extrabold text-xs flex items-center justify-center border border-amber-400/50 transition cursor-pointer active:scale-90"
+            title="Diminuir altura (-2%)"
+          >
+            -
+          </button>
+          <span className="text-xs font-mono font-bold text-amber-300 px-0.5">
+            {currentHeight}%
+          </span>
+          <button
+            type="button"
+            onClick={() => nudgeDimension('slotHeight', 2, currentHeight)}
+            className="w-5 h-5 rounded bg-amber-500/20 hover:bg-amber-400 text-amber-300 hover:text-black font-extrabold text-xs flex items-center justify-center border border-amber-400/50 transition cursor-pointer active:scale-90"
+            title="Aumentar altura (+2%)"
+          >
+            +
+          </button>
+        </div>
+      )}
+
+      {/* Size/Scale Zoom Controls */}
       <div className="flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded-lg border border-white/10">
         <span className="text-[10px] font-black text-amber-300 uppercase flex items-center gap-0.5">
-          <Maximize2 className="w-3 h-3 text-amber-400" />
+          <Maximize2 className="w-3 h-3 text-yellow-400" />
           <span>Zoom:</span>
         </span>
         <button
           type="button"
           onClick={() => onUpdateScale(elementId, currentScale - 5)}
           className="w-5 h-5 rounded bg-amber-500/20 hover:bg-amber-400 text-amber-300 hover:text-black font-extrabold text-xs flex items-center justify-center border border-amber-400/50 transition cursor-pointer active:scale-90"
-          title="Diminuir tamanho (-5%)"
+          title="Diminuir zoom/escala (-5%)"
         >
           -
         </button>
-        <span className="text-xs font-mono font-bold text-amber-300 px-0.5">
+        <span className="text-xs font-mono font-bold text-yellow-300 px-0.5">
           {currentScale}%
         </span>
         <button
           type="button"
           onClick={() => onUpdateScale(elementId, currentScale + 5)}
           className="w-5 h-5 rounded bg-amber-500/20 hover:bg-amber-400 text-amber-300 hover:text-black font-extrabold text-xs flex items-center justify-center border border-amber-400/50 transition cursor-pointer active:scale-90"
-          title="Aumentar tamanho (+5%)"
+          title="Aumentar zoom/escala (+5%)"
         >
           +
         </button>
@@ -213,10 +281,21 @@ export const GameStage: React.FC<GameStageProps> = ({
     elementId: '',
   });
 
-  const resizeStartRef = useRef<{ x: number; y: number; initialScale: number; elementId: string }>({
+  const resizeStartRef = useRef<{ 
+    x: number; 
+    y: number; 
+    initialScale: number; 
+    initialWidth: number; 
+    initialHeight: number; 
+    mode: 'scale' | 'width' | 'height'; 
+    elementId: string 
+  }>({
     x: 0,
     y: 0,
     initialScale: 100,
+    initialWidth: 90,
+    initialHeight: 48,
+    mode: 'scale',
     elementId: '',
   });
 
@@ -247,7 +326,14 @@ export const GameStage: React.FC<GameStageProps> = ({
     };
   };
 
-  const handleResizeMouseDown = (e: React.MouseEvent | React.TouchEvent, elementId: string, currentScale: number) => {
+  const handleResizeMouseDown = (
+    e: React.MouseEvent | React.TouchEvent, 
+    elementId: string, 
+    currentScale: number,
+    mode: 'scale' | 'width' | 'height' = 'scale',
+    initialWidth: number = 90,
+    initialHeight: number = 48
+  ) => {
     if (!isEditing || !onUpdateAdminConfig) return;
     e.stopPropagation();
     if (e.cancelable) e.preventDefault();
@@ -260,6 +346,9 @@ export const GameStage: React.FC<GameStageProps> = ({
       x: coords.x,
       y: coords.y,
       initialScale: currentScale || 100,
+      initialWidth: initialWidth || 90,
+      initialHeight: initialHeight || 48,
+      mode,
       elementId,
     };
   };
@@ -337,12 +426,31 @@ export const GameStage: React.FC<GameStageProps> = ({
           onUpdateAdminConfig({ turboLeft: newLeft, turboTop: newTop });
         }
       } else if (isResizing && resizeStartRef.current.elementId) {
-        const dx = coords.x - resizeStartRef.current.x;
-        const dy = coords.y - resizeStartRef.current.y;
-        const delta = (dx + dy) / 2;
-        const scaleDelta = Math.round(delta / 1.5);
-        const newScale = resizeStartRef.current.initialScale + scaleDelta;
-        updateElementScale(resizeStartRef.current.elementId, newScale);
+        const { mode, elementId, initialWidth, initialHeight, initialScale, x: startX, y: startY } = resizeStartRef.current;
+        const dxScreen = coords.x - startX;
+        const dyScreen = coords.y - startY;
+        const dxVirtual = dxScreen / (scale || 1);
+        const dyVirtual = dyScreen / (scale || 1);
+
+        if (mode === 'width') {
+          const dWidthPct = (dxVirtual / VIRTUAL_WIDTH) * 100;
+          const newWidth = Math.max(10, Math.min(100, Math.round((initialWidth + dWidthPct) * 10) / 10));
+          if (elementId === 'slot') {
+            onUpdateAdminConfig({ slotWidth: newWidth });
+          }
+        } else if (mode === 'height') {
+          const dHeightPct = (dyVirtual / VIRTUAL_HEIGHT) * 100;
+          const newHeight = Math.max(10, Math.min(100, Math.round((initialHeight + dHeightPct) * 10) / 10));
+          if (elementId === 'slot') {
+            onUpdateAdminConfig({ slotHeight: newHeight });
+          }
+        } else {
+          // Proportional scale/zoom mode
+          const delta = (dxScreen + dyScreen) / 2;
+          const scaleDelta = Math.round(delta / 1.5);
+          const newScale = initialScale + scaleDelta;
+          updateElementScale(elementId, newScale);
+        }
       }
     };
 
@@ -785,52 +893,68 @@ export const GameStage: React.FC<GameStageProps> = ({
                   currentScale={getScaleForElement('slot')} 
                   currentLeft={adminConfig.slotLeft ?? 5}
                   currentTop={adminConfig.slotTop ?? 28}
+                  currentWidth={adminConfig.slotWidth ?? 90}
+                  currentHeight={adminConfig.slotHeight ?? 48}
                   onUpdateScale={updateElementScale} 
                   onUpdateAdminConfig={onUpdateAdminConfig}
                 />
 
-                {/* Move Anchor Handle (Cyan - Top Left) */}
+                {/* Center Move Badge ("No meio mover") */}
                 <div
                   onMouseDown={(e) => handleMouseDown(e, 'slot', adminConfig.slotLeft ?? 5, adminConfig.slotTop ?? 28)}
                   onTouchStart={(e) => handleMouseDown(e, 'slot', adminConfig.slotLeft ?? 5, adminConfig.slotTop ?? 28)}
                   onClick={(e) => e.stopPropagation()}
-                  className="absolute -top-2.5 -left-2.5 w-7 h-7 rounded-full bg-cyan-400 text-black border-2 border-cyan-100 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.9)] cursor-move z-[120] hover:scale-125 active:scale-110 transition-transform"
-                  title="Arraste para mover o quadro do slot de posição (X e Y)"
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-1 rounded-full bg-cyan-400 text-black border-2 border-cyan-100 flex items-center gap-1.5 shadow-[0_0_20px_rgba(6,182,212,0.95)] cursor-move z-[120] hover:scale-110 active:scale-95 transition-transform select-none"
+                  title="Arraste aqui no meio para MOVER o Slot (Posição X e Y)"
+                >
+                  <Move className="w-4 h-4 text-black font-black" />
+                  <span className="text-[10px] font-black uppercase tracking-wider text-black">MOVER</span>
+                </div>
+
+                {/* Top-Left Position Handle */}
+                <div
+                  onMouseDown={(e) => handleMouseDown(e, 'slot', adminConfig.slotLeft ?? 5, adminConfig.slotTop ?? 28)}
+                  onTouchStart={(e) => handleMouseDown(e, 'slot', adminConfig.slotLeft ?? 5, adminConfig.slotTop ?? 28)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute -top-3.5 -left-3.5 w-7 h-7 rounded-full bg-cyan-400 text-black border-2 border-cyan-100 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.9)] cursor-move z-[120] hover:scale-125 active:scale-110 transition-transform"
+                  title="Arraste para MOVER o Slot (X e Y)"
                 >
                   <Move className="w-3.5 h-3.5 text-black font-extrabold" />
                 </div>
 
-                {/* Right Lateral Handle (Amber - Right Edge) */}
+                {/* Right Lateral Handle (Botão Lateral -> Aumentar a LARGURA) */}
                 <div
-                  onMouseDown={(e) => handleMouseDown(e, 'slot', adminConfig.slotLeft ?? 5, adminConfig.slotTop ?? 28)}
-                  onTouchStart={(e) => handleMouseDown(e, 'slot', adminConfig.slotLeft ?? 5, adminConfig.slotTop ?? 28)}
+                  onMouseDown={(e) => handleResizeMouseDown(e, 'slot', getScaleForElement('slot'), 'width', adminConfig.slotWidth ?? 90, adminConfig.slotHeight ?? 48)}
+                  onTouchStart={(e) => handleResizeMouseDown(e, 'slot', getScaleForElement('slot'), 'width', adminConfig.slotWidth ?? 90, adminConfig.slotHeight ?? 48)}
                   onClick={(e) => e.stopPropagation()}
-                  className="absolute top-1/2 -right-2.5 -translate-y-1/2 w-6 h-6 rounded-full bg-amber-400 text-black border-2 border-yellow-100 flex items-center justify-center shadow-[0_0_15px_rgba(251,191,36,0.9)] cursor-ew-resize z-[120] hover:scale-125 active:scale-110 transition-transform"
-                  title="Arraste para mover lateralmente"
+                  className="absolute top-1/2 -right-4 -translate-y-1/2 px-2 py-1 rounded-lg bg-amber-400 text-black border-2 border-yellow-100 flex items-center gap-1 shadow-[0_0_15px_rgba(251,191,36,0.95)] cursor-ew-resize z-[120] hover:scale-110 active:scale-95 transition-transform select-none"
+                  title="Arraste para a direita/esquerda para AUMENTAR/DIMINUIR A LARGURA (% Width)"
                 >
-                  <MoveHorizontal className="w-3 h-3 text-black font-extrabold" />
+                  <MoveHorizontal className="w-3.5 h-3.5 text-black font-extrabold" />
+                  <span className="text-[9px] font-black text-black font-mono">{adminConfig.slotWidth ?? 90}%</span>
                 </div>
 
-                {/* Bottom Vertical Handle (Amber - Bottom Edge) */}
+                {/* Bottom Center Handle (Botão no Meio Lá em Baixo -> Controlar a ALTURA) */}
                 <div
-                  onMouseDown={(e) => handleMouseDown(e, 'slot', adminConfig.slotLeft ?? 5, adminConfig.slotTop ?? 28)}
-                  onTouchStart={(e) => handleMouseDown(e, 'slot', adminConfig.slotLeft ?? 5, adminConfig.slotTop ?? 28)}
+                  onMouseDown={(e) => handleResizeMouseDown(e, 'slot', getScaleForElement('slot'), 'height', adminConfig.slotWidth ?? 90, adminConfig.slotHeight ?? 48)}
+                  onTouchStart={(e) => handleResizeMouseDown(e, 'slot', getScaleForElement('slot'), 'height', adminConfig.slotWidth ?? 90, adminConfig.slotHeight ?? 48)}
                   onClick={(e) => e.stopPropagation()}
-                  className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-amber-400 text-black border-2 border-yellow-100 flex items-center justify-center shadow-[0_0_15px_rgba(251,191,36,0.9)] cursor-ns-resize z-[120] hover:scale-125 active:scale-110 transition-transform"
-                  title="Arraste para mover verticalmente"
+                  className="absolute -bottom-4 left-1/2 -translate-x-1/2 px-2 py-1 rounded-lg bg-amber-400 text-black border-2 border-yellow-100 flex items-center gap-1 shadow-[0_0_15px_rgba(251,191,36,0.95)] cursor-ns-resize z-[120] hover:scale-110 active:scale-95 transition-transform select-none"
+                  title="Arraste para baixo/cima para AUMENTAR/DIMINUIR A ALTURA (% Height)"
                 >
-                  <MoveVertical className="w-3 h-3 text-black font-extrabold" />
+                  <MoveVertical className="w-3.5 h-3.5 text-black font-extrabold" />
+                  <span className="text-[9px] font-black text-black font-mono">{adminConfig.slotHeight ?? 48}%</span>
                 </div>
 
-                {/* Corner Scale Handle (Amber - Bottom Right) */}
+                {/* Bottom Right Corner Handle (Da Ponta -> ZOOM / Escala Geral Proporcional) */}
                 <div
-                  onMouseDown={(e) => handleResizeMouseDown(e, 'slot', getScaleForElement('slot'))}
-                  onTouchStart={(e) => handleResizeMouseDown(e, 'slot', getScaleForElement('slot'))}
+                  onMouseDown={(e) => handleResizeMouseDown(e, 'slot', getScaleForElement('slot'), 'scale')}
+                  onTouchStart={(e) => handleResizeMouseDown(e, 'slot', getScaleForElement('slot'), 'scale')}
                   onClick={(e) => e.stopPropagation()}
-                  className="absolute -bottom-2.5 -right-2.5 w-7 h-7 rounded-full bg-amber-400 text-black border-2 border-yellow-100 flex items-center justify-center shadow-[0_0_15px_rgba(251,191,36,0.9)] cursor-nwse-resize z-[120] hover:scale-125 active:scale-110 transition-transform"
-                  title="Arraste para redimensionar o tamanho diretamente na tela"
+                  className="absolute -bottom-3.5 -right-3.5 w-8 h-8 rounded-full bg-amber-400 text-black border-2 border-yellow-100 flex items-center justify-center shadow-[0_0_15px_rgba(251,191,36,0.95)] cursor-nwse-resize z-[120] hover:scale-125 active:scale-110 transition-transform"
+                  title="Arraste no canto para ajustar o ZOOM / ESCALA geral do Slot (%)"
                 >
-                  <Maximize2 className="w-3.5 h-3.5 text-black font-extrabold" />
+                  <Scaling className="w-4 h-4 text-black font-extrabold" />
                 </div>
               </>
             )}
