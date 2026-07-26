@@ -167,15 +167,16 @@ export const SlotReel: React.FC<SlotReelProps> = ({
     } else if (anim.state === 'DECELERATING') {
       const distance = anim.targetY - anim.y;
 
-      if (distance > 2.5) {
-        // Linear deceleration while further away
-        const decelRate = spinStyle === 'turbo' ? 0.035 : 0.015;
-        anim.velocity = Math.max(0.12, anim.velocity - decelRate);
+      if (distance > 1.2) {
+        // Smooth controlled deceleration towards target
+        const maxSpeed = spinStyle === 'turbo' ? 0.95 : 0.70;
+        const idealVel = Math.min(maxSpeed, Math.max(0.10, distance * 0.08));
+        anim.velocity = anim.velocity + (idealVel - anim.velocity) * 0.15;
         anim.y += anim.velocity;
       } else {
-        // High-precision Spring-Damper System for bounce
-        const springK = spinStyle === 'turbo' ? 0.22 : 0.12;
-        const dampingC = spinStyle === 'turbo' ? 0.55 : 0.42;
+        // High-precision Spring-Damper System for natural bounce
+        const springK = spinStyle === 'turbo' ? 0.25 : 0.18;
+        const dampingC = spinStyle === 'turbo' ? 0.60 : 0.50;
 
         const springForce = springK * distance;
         const dampingForce = dampingC * anim.velocity;
@@ -185,7 +186,7 @@ export const SlotReel: React.FC<SlotReelProps> = ({
         anim.y += anim.velocity;
 
         // Check if finished bouncing and settled
-        if (Math.abs(distance) < 0.005 && Math.abs(anim.velocity) < 0.005) {
+        if (Math.abs(distance) < 0.003 && Math.abs(anim.velocity) < 0.003) {
           anim.y = anim.targetY;
           anim.velocity = 0;
           anim.state = 'IDLE';
@@ -278,11 +279,17 @@ export const SlotReel: React.FC<SlotReelProps> = ({
           ? resultSymbols 
           : (['Castle', 'Sword', 'Diamond'] as SymbolType[]);
 
-        const landingStrip = [...visibleSymbols, ...filler, ...targetSymbols];
+        const landingStrip = [
+          ...visibleSymbols, 
+          ...filler, 
+          ...targetSymbols, 
+          ...targetSymbols, 
+          ...targetSymbols
+        ];
 
         anim.strip = landingStrip;
         anim.y = frac;
-        anim.targetY = landingStrip.length - numRows;
+        anim.targetY = visibleSymbols.length + filler.length;
         anim.state = 'DECELERATING';
 
         setRenderStrip(landingStrip);
