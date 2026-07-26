@@ -110,17 +110,18 @@ export const SlotReel: React.FC<SlotReelProps> = ({
   // Synchronize base symbols when completely idle
   useEffect(() => {
     if (!isSpinning && !isReelSpinning && resultSymbols && resultSymbols.length > 0) {
-      setCurrentSymbols(resultSymbols);
-      setRenderStrip(resultSymbols);
-      animRef.current.y = 0;
-      animRef.current.velocity = 0;
-      animRef.current.state = 'IDLE';
-      if (stripRef.current) {
-        stripRef.current.style.transform = 'translate3d(0, 0%, 0)';
-        stripRef.current.style.filter = 'none';
+      if (animRef.current.state === 'IDLE' && renderStrip.length === numRows) {
+        setCurrentSymbols(resultSymbols);
+        setRenderStrip(resultSymbols);
+        animRef.current.y = 0;
+        animRef.current.velocity = 0;
+        if (stripRef.current) {
+          stripRef.current.style.transform = 'translate3d(0, 0%, 0)';
+          stripRef.current.style.filter = 'none';
+        }
       }
     }
-  }, [resultSymbols, isSpinning, isReelSpinning]);
+  }, [resultSymbols, isSpinning, isReelSpinning, renderStrip.length, numRows]);
 
   // Synchronize DOM transform whenever renderStrip settles back to base numRows length
   useLayoutEffect(() => {
@@ -191,10 +192,9 @@ export const SlotReel: React.FC<SlotReelProps> = ({
           anim.velocity = 0;
           anim.state = 'IDLE';
 
-          // Commit final symbols and reset state back to base numRows in a single synchronized update
+          // Commit final symbols state and settle smoothly without shifting transform off-screen
           const finalSymbols = targetResult && targetResult.length > 0 ? targetResult : currentSymbols;
           setCurrentSymbols(finalSymbols);
-          setRenderStrip(finalSymbols);
           
           landingDone?.();
           return;
@@ -319,18 +319,27 @@ export const SlotReel: React.FC<SlotReelProps> = ({
         }}
       >
         {renderStrip.map((symbol, i) => {
-          const isSettled = renderStrip.length === numRows;
+          const targetY = animRef.current.targetY;
+          const rowInView = animRef.current.state === 'IDLE' && renderStrip.length > numRows
+            ? i - targetY
+            : i;
+
+          const isVisibleInViewport = animRef.current.state === 'IDLE' && renderStrip.length > numRows
+            ? rowInView >= 0 && rowInView < numRows
+            : renderStrip.length === numRows;
+
+          const isWinning = animRef.current.state === 'IDLE' && isVisibleInViewport && winningRows?.has(rowInView);
 
           return (
             <div
               key={`slot-${i}`}
               style={{ height: `${100 / renderStrip.length}%` }}
               className="relative flex items-center justify-center w-full flex-1 min-h-0"
-              {...(isSettled ? { 'data-symbol-col': colIndex, 'data-symbol-row': i } : {})}
+              {...(isVisibleInViewport ? { 'data-symbol-col': colIndex, 'data-symbol-row': rowInView } : {})}
             >
               <SlotSymbol 
                 type={symbol} 
-                isWinning={animRef.current.state === 'IDLE' ? winningRows?.has(i) : false}
+                isWinning={isWinning}
                 customImage={customSymbols?.[symbol]} 
                 symbolConfig={customSymbolConfigs?.[symbol]}
               />
