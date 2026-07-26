@@ -29,6 +29,7 @@ interface GameStageProps {
   selectedPaylineId?: string;
   testPaylineId?: string | null;
   onUpdatePaylineBadgePos?: (paylineId: string, xPct: number, yPct: number) => void;
+  onUpdatePaylineMediaPos?: (paylineId: string, xPct: number, yPct: number) => void;
 }
 
 interface QuickScaleToolbarProps {
@@ -240,6 +241,7 @@ export const GameStage: React.FC<GameStageProps> = ({
   selectedPaylineId,
   testPaylineId,
   onUpdatePaylineBadgePos,
+  onUpdatePaylineMediaPos,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [stageSize, setStageSize] = useState<{ width: number; height: number }>({ width: 360, height: 640 });
@@ -1002,6 +1004,7 @@ export const GameStage: React.FC<GameStageProps> = ({
               selectedPaylineId={selectedPaylineId}
               testPaylineId={testPaylineId}
               onUpdatePaylineBadgePos={onUpdatePaylineBadgePos}
+              onUpdatePaylineMediaPos={onUpdatePaylineMediaPos}
             />
           </div>
         )}

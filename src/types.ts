@@ -23,11 +23,20 @@ export interface Payline {
   strokeWidth?: number; // line thickness in px
   active: boolean;
 
-  // Media de Vitória (Foto ou Vídeo por URL)
-  winMediaUrl?: string; // Image or Video URL (MP4, WebM, GIF, PNG, JPG)
+  // Media de Vitória (Foto ou Vídeo por Arquivo Upload ou URL)
+  winMediaUrl?: string; // Image or Video URL/Base64
   winMediaType?: 'none' | 'image' | 'video'; // Media type
   winMediaFit?: 'contain' | 'cover';
-  winAnimationType?: 'pulse' | 'glow' | 'bounce' | 'shake' | 'sparkle' | 'banner';
+  winAnimationType?: 'none' | 'pulse' | 'glow' | 'bounce' | 'shake' | 'fade';
+  fullScreenMedia?: boolean; // Se true, cobre a grade inteira do jogo (default true)
+  winMediaPosX?: number; // Pos X em % (0 a 100) caso não seja fullscreen
+  winMediaPosY?: number; // Pos Y em % (0 a 100) caso não seja fullscreen
+  winMediaWidth?: number; // Largura em % (10 a 100)
+  winMediaHeight?: number; // Altura em % (10 a 100)
+
+  // Opções de Exibição de Rótulo e Valores
+  showLineName?: boolean; // Se true, exibe o nome da linha na tela
+  showWinBadge?: boolean; // Se true, exibe o balão de valor do ganho
 
   // Posicionamento do Valor do Ganho (Badge / Banner da Linha)
   winBadgePosX?: number; // X position in % (0 to 100)

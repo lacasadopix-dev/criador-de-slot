@@ -21,6 +21,7 @@ interface SlotMachineProps {
   selectedPaylineId?: string;
   testPaylineId?: string | null;
   onUpdatePaylineBadgePos?: (paylineId: string, xPct: number, yPct: number) => void;
+  onUpdatePaylineMediaPos?: (paylineId: string, xPct: number, yPct: number) => void;
 }
 
 export const SlotMachine: React.FC<SlotMachineProps> = ({ 
@@ -40,6 +41,7 @@ export const SlotMachine: React.FC<SlotMachineProps> = ({
   selectedPaylineId,
   testPaylineId,
   onUpdatePaylineBadgePos,
+  onUpdatePaylineMediaPos,
 }) => {
   const effectiveNumReels = numReels || grid?.length || 5;
   const effectiveNumRows = numRows || (grid?.[0] ? grid[0].length : 3);
@@ -135,6 +137,7 @@ export const SlotMachine: React.FC<SlotMachineProps> = ({
         isEditingPaylines={isEditingPaylines}
         selectedPaylineId={selectedPaylineId}
         onUpdatePaylineBadgePos={onUpdatePaylineBadgePos}
+        onUpdatePaylineMediaPos={onUpdatePaylineMediaPos}
       />
 
       {/* Main Grid */}

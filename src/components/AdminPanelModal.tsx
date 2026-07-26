@@ -1664,7 +1664,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2">
                                 <span className="text-xs font-black text-amber-300 uppercase tracking-widest flex items-center gap-1.5">
                                   <Film className="w-4 h-4 text-amber-400" />
-                                  Mídia & Animação de Vitória
+                                  Mídia & Animação de Vitória da Linha
                                 </span>
                                 <div className="flex items-center gap-1">
                                   {[
@@ -1690,14 +1690,39 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
                               {activePayline.winMediaType && activePayline.winMediaType !== 'none' && (
                                 <div className="space-y-3 pt-1">
-                                  <div className="space-y-1">
-                                    <label className="text-[11px] font-bold text-gray-300 flex items-center justify-between">
-                                      <span>URL da Mídia ({activePayline.winMediaType === 'video' ? 'Vídeo MP4/WebM' : 'Imagem PNG/JPG/GIF'}):</span>
-                                      <span className="text-[10px] text-amber-400 font-mono">Link público</span>
-                                    </label>
+                                  {/* Upload File or URL Input */}
+                                  <div className="space-y-2">
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                                      <label className="text-[11px] font-bold text-gray-300">
+                                        Fonte da Mídia ({activePayline.winMediaType === 'video' ? 'Vídeo MP4/WebM' : 'Imagem PNG/JPG/GIF'}):
+                                      </label>
+                                      <label className="px-3 py-1 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black font-extrabold text-[10px] rounded-lg flex items-center gap-1.5 cursor-pointer shadow border border-yellow-200">
+                                        <Upload className="w-3.5 h-3.5" />
+                                        <span>📁 Upload de Arquivo ({activePayline.winMediaType === 'video' ? 'Vídeo' : 'Foto'})</span>
+                                        <input
+                                          type="file"
+                                          accept={activePayline.winMediaType === 'video' ? 'video/*' : 'image/*'}
+                                          className="hidden"
+                                          onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                              const reader = new FileReader();
+                                              reader.onload = (evt) => {
+                                                if (evt.target?.result) {
+                                                  handleUpdatePayline(activePayline.id, {
+                                                    winMediaUrl: evt.target.result as string,
+                                                  });
+                                                }
+                                              };
+                                              reader.readAsDataURL(file);
+                                            }
+                                          }}
+                                        />
+                                      </label>
+                                    </div>
                                     <input
                                       type="text"
-                                      placeholder={activePayline.winMediaType === 'video' ? 'https://exemplo.com/efeito-vitoria.mp4' : 'https://exemplo.com/imagem.png'}
+                                      placeholder={activePayline.winMediaType === 'video' ? 'https://exemplo.com/efeito-vitoria.mp4 ou Cole Data URL Base64' : 'https://exemplo.com/imagem.png ou Cole Data URL Base64'}
                                       value={activePayline.winMediaUrl || ''}
                                       onChange={(e) => handleUpdatePayline(activePayline.id, { winMediaUrl: e.target.value })}
                                       className="w-full px-3 py-1.5 bg-black border border-white/20 rounded-lg text-xs text-white font-mono focus:outline-none focus:border-amber-400"
@@ -1711,63 +1736,134 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                         onClick={() => handleUpdatePayline(activePayline.id, {
                                           winMediaType: 'video',
                                           winMediaUrl: 'https://assets.mixkit.co/videos/preview/mixkit-golden-particles-explosion-41543-large.mp4',
-                                          winAnimationType: 'bounce',
-                                          winMediaFit: 'cover'
+                                          winAnimationType: 'none',
+                                          winMediaFit: 'cover',
+                                          fullScreenMedia: true,
                                         })}
                                         className="px-2 py-0.5 bg-amber-500/20 hover:bg-amber-500/40 border border-amber-500/50 rounded text-[10px] text-amber-300 font-bold shrink-0 cursor-pointer"
                                       >
-                                        🎬 Ouro em Partículas
+                                        🎬 Ouro Tela Cheia
                                       </button>
                                       <button
                                         type="button"
                                         onClick={() => handleUpdatePayline(activePayline.id, {
                                           winMediaType: 'image',
                                           winMediaUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=400&q=80',
-                                          winAnimationType: 'pulse',
-                                          winMediaFit: 'contain'
+                                          winAnimationType: 'glow',
+                                          winMediaFit: 'contain',
+                                          fullScreenMedia: true,
                                         })}
                                         className="px-2 py-0.5 bg-amber-500/20 hover:bg-amber-500/40 border border-amber-500/50 rounded text-[10px] text-amber-300 font-bold shrink-0 cursor-pointer"
                                       >
                                         🖼️ Troféu Néon
                                       </button>
+                                    </div>
+                                  </div>
+
+                                  {/* Media Sizing Mode (Fullscreen vs Custom Box) */}
+                                  <div className="p-2.5 bg-black/60 rounded-lg border border-white/10 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[11px] font-bold text-gray-200">Exibir Mídia na Tela Toda do Slot:</span>
                                       <button
                                         type="button"
-                                        onClick={() => handleUpdatePayline(activePayline.id, {
-                                          winMediaType: 'image',
-                                          winMediaUrl: 'https://images.unsplash.com/photo-1533158307587-828f0a76ef46?auto=format&fit=crop&w=400&q=80',
-                                          winAnimationType: 'shake',
-                                          winMediaFit: 'cover'
-                                        })}
-                                        className="px-2 py-0.5 bg-amber-500/20 hover:bg-amber-500/40 border border-amber-500/50 rounded text-[10px] text-amber-300 font-bold shrink-0 cursor-pointer"
+                                        onClick={() => handleUpdatePayline(activePayline.id, { fullScreenMedia: activePayline.fullScreenMedia === false ? true : false })}
+                                        className={`px-3 py-1 rounded text-[10px] font-black border transition cursor-pointer ${
+                                          activePayline.fullScreenMedia !== false
+                                            ? 'bg-amber-500 text-black border-yellow-300'
+                                            : 'bg-cyan-950 text-cyan-300 border-cyan-500'
+                                        }`}
                                       >
-                                        🖼️ Chuva Dourada
+                                        {activePayline.fullScreenMedia !== false ? '✅ TELA CHEIA (100%)' : '📐 POSIÇÃO/TAMANHO MANUAL'}
                                       </button>
                                     </div>
+
+                                    {/* Sliders for manual position if not fullscreen */}
+                                    {activePayline.fullScreenMedia === false && (
+                                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
+                                        <div className="space-y-1">
+                                          <span className="text-[10px] text-gray-300 font-bold flex justify-between">
+                                            <span>Posição X (%):</span>
+                                            <span className="text-cyan-300 font-mono">{activePayline.winMediaPosX ?? 50}%</span>
+                                          </span>
+                                          <input
+                                            type="range"
+                                            min="0"
+                                            max="100"
+                                            value={activePayline.winMediaPosX ?? 50}
+                                            onChange={(e) => handleUpdatePayline(activePayline.id, { winMediaPosX: parseInt(e.target.value) })}
+                                            className="w-full accent-cyan-400 cursor-pointer"
+                                          />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <span className="text-[10px] text-gray-300 font-bold flex justify-between">
+                                            <span>Posição Y (%):</span>
+                                            <span className="text-cyan-300 font-mono">{activePayline.winMediaPosY ?? 50}%</span>
+                                          </span>
+                                          <input
+                                            type="range"
+                                            min="0"
+                                            max="100"
+                                            value={activePayline.winMediaPosY ?? 50}
+                                            onChange={(e) => handleUpdatePayline(activePayline.id, { winMediaPosY: parseInt(e.target.value) })}
+                                            className="w-full accent-cyan-400 cursor-pointer"
+                                          />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <span className="text-[10px] text-gray-300 font-bold flex justify-between">
+                                            <span>Largura (%):</span>
+                                            <span className="text-cyan-300 font-mono">{activePayline.winMediaWidth ?? 50}%</span>
+                                          </span>
+                                          <input
+                                            type="range"
+                                            min="10"
+                                            max="100"
+                                            value={activePayline.winMediaWidth ?? 50}
+                                            onChange={(e) => handleUpdatePayline(activePayline.id, { winMediaWidth: parseInt(e.target.value) })}
+                                            className="w-full accent-cyan-400 cursor-pointer"
+                                          />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <span className="text-[10px] text-gray-300 font-bold flex justify-between">
+                                            <span>Altura (%):</span>
+                                            <span className="text-cyan-300 font-mono">{activePayline.winMediaHeight ?? 50}%</span>
+                                          </span>
+                                          <input
+                                            type="range"
+                                            min="10"
+                                            max="100"
+                                            value={activePayline.winMediaHeight ?? 50}
+                                            onChange={(e) => handleUpdatePayline(activePayline.id, { winMediaHeight: parseInt(e.target.value) })}
+                                            className="w-full accent-cyan-400 cursor-pointer"
+                                          />
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
 
                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                                     <div className="space-y-1">
-                                      <span className="text-[11px] font-bold text-gray-300 block">Estilo da Animação:</span>
+                                      <span className="text-[11px] font-bold text-gray-300 block">Efeito de Animação:</span>
                                       <select
-                                        value={activePayline.winAnimationType || 'pulse'}
+                                        value={activePayline.winAnimationType || 'none'}
                                         onChange={(e) => handleUpdatePayline(activePayline.id, { winAnimationType: e.target.value as any })}
                                         className="w-full px-2.5 py-1.5 bg-black border border-white/20 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-amber-400"
                                       >
-                                        <option value="pulse">⚡ Pulsar Néon</option>
+                                        <option value="none">✨ Estático / Limpo (Sem Pulso)</option>
+                                        <option value="glow">🔥 Brilho Dourado (Glow)</option>
+                                        <option value="pulse">⚡ Pulsar Suave</option>
                                         <option value="bounce">🏀 Bounce Saltitante</option>
-                                        <option value="glow">🔥 Glow Flamejante</option>
                                         <option value="shake">📳 Shake Terremoto</option>
                                       </select>
                                     </div>
 
                                     <div className="space-y-1">
-                                      <span className="text-[11px] font-bold text-gray-300 block">Ajuste da Mídia:</span>
+                                      <span className="text-[11px] font-bold text-gray-300 block">Ajuste do Enquadramento:</span>
                                       <select
                                         value={activePayline.winMediaFit || 'cover'}
                                         onChange={(e) => handleUpdatePayline(activePayline.id, { winMediaFit: e.target.value as any })}
                                         className="w-full px-2.5 py-1.5 bg-black border border-white/20 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-amber-400"
                                       >
-                                        <option value="cover">Preencher (Cover)</option>
+                                        <option value="cover">Preencher Tela (Cover)</option>
                                         <option value="contain">Conter Completo (Contain)</option>
                                       </select>
                                     </div>
@@ -1776,71 +1872,105 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                               )}
                             </div>
 
-                            {/* SEÇÃO DE POSIÇÃO DO VALOR DO GANHO (ARRASTÁVEL) */}
+                            {/* CONFIGURAÇÕES DE EXIBIÇÃO DE TEXTOS E BADGE DE VALOR */}
                             <div className="p-3.5 bg-black/80 rounded-xl border border-amber-500/30 space-y-3">
                               <div className="flex items-center justify-between border-b border-white/10 pb-2">
                                 <span className="text-xs font-black text-amber-300 uppercase tracking-widest flex items-center gap-1.5">
                                   <Move className="w-4 h-4 text-amber-400" />
-                                  Posição do Valor do Ganho (Badge)
-                                </span>
-                                <span className="text-[10px] text-cyan-300 font-bold bg-cyan-950/80 border border-cyan-500/40 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                                  <Move className="w-3 h-3" />
-                                  <span>Arrastável com o Mouse/Toque</span>
+                                  Exibição do Nome & Banner de Valor
                                 </span>
                               </div>
 
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                  <div className="flex justify-between text-[11px] font-bold text-gray-300">
-                                    <span>Posição X (% Horizontal):</span>
-                                    <span className="font-mono text-amber-300">{activePayline.winBadgePosX ?? 50}%</span>
-                                  </div>
-                                  <input
-                                    type="range"
-                                    min="0"
-                                    max="100"
-                                    value={activePayline.winBadgePosX ?? 50}
-                                    onChange={(e) => handleUpdatePayline(activePayline.id, { winBadgePosX: parseInt(e.target.value) })}
-                                    className="w-full accent-amber-500 cursor-pointer"
-                                  />
-                                </div>
-
-                                <div className="space-y-1">
-                                  <div className="flex justify-between text-[11px] font-bold text-gray-300">
-                                    <span>Posição Y (% Vertical):</span>
-                                    <span className="font-mono text-amber-300">{activePayline.winBadgePosY ?? 50}%</span>
-                                  </div>
-                                  <input
-                                    type="range"
-                                    min="0"
-                                    max="100"
-                                    value={activePayline.winBadgePosY ?? 50}
-                                    onChange={(e) => handleUpdatePayline(activePayline.id, { winBadgePosY: parseInt(e.target.value) })}
-                                    className="w-full accent-amber-500 cursor-pointer"
-                                  />
-                                </div>
-                              </div>
-
-                              {/* Presets de Posição Rápida */}
-                              <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                                <span className="text-[10px] text-gray-400 font-bold">Atalhos:</span>
-                                {[
-                                  { label: '📌 Centro', x: 50, y: 50 },
-                                  { label: '🔝 Topo', x: 50, y: 15 },
-                                  { label: '🔻 Base', x: 50, y: 85 },
-                                  { label: '⬅️ Esquerda', x: 20, y: 50 },
-                                  { label: '➡️ Direita', x: 80, y: 50 },
-                                ].map(preset => (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {/* Toggle Show Line Name */}
+                                <div className="p-2.5 bg-black/60 rounded-lg border border-white/10 flex items-center justify-between">
+                                  <span className="text-xs font-bold text-gray-200">Exibir Nome da Linha:</span>
                                   <button
-                                    key={preset.label}
                                     type="button"
-                                    onClick={() => handleUpdatePayline(activePayline.id, { winBadgePosX: preset.x, winBadgePosY: preset.y })}
-                                    className="px-2 py-1 bg-black/60 hover:bg-amber-500/20 border border-white/10 hover:border-amber-400/50 rounded-lg text-[10px] font-bold text-gray-300 hover:text-white transition cursor-pointer"
+                                    onClick={() => handleUpdatePayline(activePayline.id, { showLineName: !activePayline.showLineName })}
+                                    className={`px-3 py-1 rounded text-[10px] font-extrabold border transition cursor-pointer ${
+                                      activePayline.showLineName
+                                        ? 'bg-emerald-500 text-black border-emerald-300'
+                                        : 'bg-black/80 text-gray-400 border-white/20'
+                                    }`}
                                   >
-                                    {preset.label}
+                                    {activePayline.showLineName ? 'SIM (EXIBIR)' : 'NÃO (OCULTAR)'}
                                   </button>
-                                ))}
+                                </div>
+
+                                {/* Toggle Show Win Badge */}
+                                <div className="p-2.5 bg-black/60 rounded-lg border border-white/10 flex items-center justify-between">
+                                  <span className="text-xs font-bold text-gray-200">Exibir Balão de Valor:</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdatePayline(activePayline.id, { showWinBadge: activePayline.showWinBadge === false ? true : false })}
+                                    className={`px-3 py-1 rounded text-[10px] font-extrabold border transition cursor-pointer ${
+                                      activePayline.showWinBadge !== false
+                                        ? 'bg-emerald-500 text-black border-emerald-300'
+                                        : 'bg-black/80 text-gray-400 border-white/20'
+                                    }`}
+                                  >
+                                    {activePayline.showWinBadge !== false ? 'SIM (EXIBIR)' : 'NÃO (OCULTAR)'}
+                                  </button>
+                                </div>
                               </div>
+
+                              {activePayline.showWinBadge !== false && (
+                                <div className="space-y-3 pt-2 border-t border-white/10">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                      <div className="flex justify-between text-[11px] font-bold text-gray-300">
+                                        <span>Posição X do Balão (%):</span>
+                                        <span className="font-mono text-amber-300">{activePayline.winBadgePosX ?? 50}%</span>
+                                      </div>
+                                      <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        value={activePayline.winBadgePosX ?? 50}
+                                        onChange={(e) => handleUpdatePayline(activePayline.id, { winBadgePosX: parseInt(e.target.value) })}
+                                        className="w-full accent-amber-500 cursor-pointer"
+                                      />
+                                    </div>
+
+                                    <div className="space-y-1">
+                                      <div className="flex justify-between text-[11px] font-bold text-gray-300">
+                                        <span>Posição Y do Balão (%):</span>
+                                        <span className="font-mono text-amber-300">{activePayline.winBadgePosY ?? 50}%</span>
+                                      </div>
+                                      <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        value={activePayline.winBadgePosY ?? 50}
+                                        onChange={(e) => handleUpdatePayline(activePayline.id, { winBadgePosY: parseInt(e.target.value) })}
+                                        className="w-full accent-amber-500 cursor-pointer"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  {/* Presets de Posição Rápida */}
+                                  <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                                    <span className="text-[10px] text-gray-400 font-bold">Atalhos Balão:</span>
+                                    {[
+                                      { label: '📌 Centro', x: 50, y: 50 },
+                                      { label: '🔝 Topo', x: 50, y: 15 },
+                                      { label: '🔻 Base', x: 50, y: 85 },
+                                      { label: '⬅️ Esquerda', x: 20, y: 50 },
+                                      { label: '➡️ Direita', x: 80, y: 50 },
+                                    ].map(preset => (
+                                      <button
+                                        key={preset.label}
+                                        type="button"
+                                        onClick={() => handleUpdatePayline(activePayline.id, { winBadgePosX: preset.x, winBadgePosY: preset.y })}
+                                        className="px-2 py-1 bg-black/60 hover:bg-amber-500/20 border border-white/10 hover:border-amber-400/50 rounded-lg text-[10px] font-bold text-gray-300 hover:text-white transition cursor-pointer"
+                                      >
+                                        {preset.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         );

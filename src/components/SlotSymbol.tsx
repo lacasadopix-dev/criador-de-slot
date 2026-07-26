@@ -66,17 +66,10 @@ export const SlotSymbol: React.FC<SlotSymbolProps> = ({ type, isWinning, customI
   };
 
   return (
-    <div className={`relative flex items-center justify-center w-full h-full flex-1 min-h-0 symbol-container rounded-md overflow-hidden transition-all duration-300 ${isWinning ? 'box-gold-glow border-2 border-yellow-400 z-10 scale-105' : ''}`}>
-      <motion.div
-        animate={isWinning ? {
-          scale: [1, 1.12, 1],
-          rotate: [0, 3, -3, 0],
-        } : {}}
-        transition={{ duration: 1, repeat: isWinning ? Infinity : 0 }}
-        className="w-full h-full flex items-center justify-center p-0.5"
-      >
+    <div className={`relative flex items-center justify-center w-full h-full flex-1 min-h-0 symbol-container rounded-md overflow-hidden transition-all duration-200 ${isWinning ? 'box-gold-glow border-2 border-yellow-400 z-10 scale-[1.02]' : ''}`}>
+      <div className="w-full h-full flex items-center justify-center p-0.5">
         {getSymbolContent()}
-      </motion.div>
+      </div>
       {/* Dynamic Lighting Overlay (Only for standard icon symbols) */}
       {!imageUrl && (
         <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none mix-blend-overlay"></div>

@@ -149,11 +149,11 @@ export const SlotReel: React.FC<SlotReelProps> = ({
           onLandingComplete?.();
         });
       } else {
-        // Standard Casino Landing: Crisp top-to-bottom drop into place with subtle bounce
-        controls.set({ y: '-18%', scale: 1, opacity: 1 });
+        // Crisp smooth landing without stutter or jumping bounce
+        controls.set({ scale: 1, opacity: 1 });
         controls.start({
           y: '0%',
-          transition: { type: 'spring', stiffness: 340, damping: 22 }
+          transition: { type: 'tween', duration: 0.06, ease: 'easeOut' }
         }).then(() => {
           onLandingComplete?.();
         });

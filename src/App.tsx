@@ -360,6 +360,24 @@ export default function App() {
     }
   }, [gameSettings.isAutoSpinning, gameState.isSpinning, gameState.balance, gameState.bet, gameSettings.turboMode]);
 
+  const handleUpdatePaylineBadgePos = (paylineId: string, xPct: number, yPct: number) => {
+    setAdminConfig(prev => ({
+      ...prev,
+      paylines: (prev.paylines || []).map(p =>
+        p.id === paylineId ? { ...p, winBadgePosX: xPct, winBadgePosY: yPct } : p
+      )
+    }));
+  };
+
+  const handleUpdatePaylineMediaPos = (paylineId: string, xPct: number, yPct: number) => {
+    setAdminConfig(prev => ({
+      ...prev,
+      paylines: (prev.paylines || []).map(p =>
+        p.id === paylineId ? { ...p, winMediaPosX: xPct, winMediaPosY: yPct } : p
+      )
+    }));
+  };
+
   return (
     <div className="relative w-full h-screen h-[100dvh] bg-[#020617] font-sans text-white flex items-center justify-center overflow-hidden touch-none select-none p-0">
       
@@ -380,6 +398,8 @@ export default function App() {
           onAllReelsStopped={handleAllReelsStopped}
           onToggleTurbo={() => setGameSettings(prev => ({ ...prev, turboMode: !prev.turboMode }))}
           onUpdateAdminConfig={(newConfig) => setAdminConfig(prev => ({ ...prev, ...newConfig }))}
+          onUpdatePaylineBadgePos={handleUpdatePaylineBadgePos}
+          onUpdatePaylineMediaPos={handleUpdatePaylineMediaPos}
         />
       </div>
 

@@ -12,6 +12,7 @@ interface PaylineOverlayProps {
   isEditingPaylines?: boolean;
   selectedPaylineId?: string;
   onUpdatePaylineBadgePos?: (paylineId: string, xPct: number, yPct: number) => void;
+  onUpdatePaylineMediaPos?: (paylineId: string, xPct: number, yPct: number) => void;
 }
 
 export const PaylineOverlay: React.FC<PaylineOverlayProps> = ({
@@ -23,6 +24,7 @@ export const PaylineOverlay: React.FC<PaylineOverlayProps> = ({
   isEditingPaylines = false,
   selectedPaylineId,
   onUpdatePaylineBadgePos,
+  onUpdatePaylineMediaPos,
 }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
@@ -44,6 +46,37 @@ export const PaylineOverlay: React.FC<PaylineOverlayProps> = ({
       const yPct = Math.max(0, Math.min(100, Math.round(((clientY - rect.top) / rect.height) * 100)));
 
       onUpdatePaylineBadgePos(lineId, xPct, yPct);
+    };
+
+    const handleUp = () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+      window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('touchend', handleUp);
+    };
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+    window.addEventListener('touchmove', handleMove);
+    window.addEventListener('touchend', handleUp);
+  };
+
+  // Dragging media position (for custom position media)
+  const handleMediaDragStart = (e: React.MouseEvent | React.TouchEvent, lineId: string) => {
+    e.stopPropagation();
+    if (!onUpdatePaylineMediaPos || !overlayRef.current) return;
+
+    const overlay = overlayRef.current;
+    const rect = overlay.getBoundingClientRect();
+
+    const handleMove = (moveEvent: MouseEvent | TouchEvent) => {
+      const clientX = 'touches' in moveEvent ? moveEvent.touches[0].clientX : moveEvent.clientX;
+      const clientY = 'touches' in moveEvent ? moveEvent.touches[0].clientY : moveEvent.clientY;
+
+      const xPct = Math.max(0, Math.min(100, Math.round(((clientX - rect.left) / rect.width) * 100)));
+      const yPct = Math.max(0, Math.min(100, Math.round(((clientY - rect.top) / rect.height) * 100)));
+
+      onUpdatePaylineMediaPos(lineId, xPct, yPct);
     };
 
     const handleUp = () => {
@@ -383,58 +416,94 @@ export const PaylineOverlay: React.FC<PaylineOverlayProps> = ({
                 </motion.g>
               )}
 
-              {/* 7. Custom Win Media Overlay (Foto ou Vídeo por URL) */}
-              {payline.winMediaUrl && payline.winMediaType && payline.winMediaType !== 'none' && (
-                <foreignObject
-                  x={Math.max(10, Math.min(svgWidth - 160, (payline.winBadgePosX !== undefined ? (payline.winBadgePosX / 100) * svgWidth : (leftBadgeX + rightBadgeX) / 2) - 75))}
-                  y={Math.max(10, Math.min(svgHeight - 160, (payline.winBadgePosY !== undefined ? (payline.winBadgePosY / 100) * svgHeight : (firstPoint.y + lastPoint.y) / 2) - 85))}
-                  width="150"
-                  height="150"
-                  className="overflow-visible pointer-events-auto"
-                >
-                  <motion.div
-                    initial={{ scale: 0.2, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                    className={`w-full h-full flex flex-col items-center justify-center relative p-1 rounded-2xl bg-black/90 border-2 border-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.95)] ${
-                      payline.winAnimationType === 'bounce'
-                        ? 'animate-bounce'
-                        : payline.winAnimationType === 'pulse'
-                        ? 'animate-pulse'
-                        : payline.winAnimationType === 'shake'
-                        ? 'animate-pulse scale-105'
-                        : ''
-                    }`}
+              {/* 7. Custom Win Media Overlay (Foto ou Vídeo por Upload ou URL) */}
+              {payline.winMediaUrl && payline.winMediaType && payline.winMediaType !== 'none' && (() => {
+                const isFullscreen = payline.fullScreenMedia !== false;
+                const mediaX = isFullscreen
+                  ? 0
+                  : payline.winMediaPosX !== undefined
+                  ? (payline.winMediaPosX / 100) * svgWidth - ((payline.winMediaWidth || 40) / 100 * svgWidth) / 2
+                  : (leftBadgeX + rightBadgeX) / 2 - 100;
+
+                const mediaY = isFullscreen
+                  ? 0
+                  : payline.winMediaPosY !== undefined
+                  ? (payline.winMediaPosY / 100) * svgHeight - ((payline.winMediaHeight || 40) / 100 * svgHeight) / 2
+                  : (firstPoint.y + lastPoint.y) / 2 - 80;
+
+                const mediaW = isFullscreen ? svgWidth : ((payline.winMediaWidth || 50) / 100) * svgWidth;
+                const mediaH = isFullscreen ? svgHeight : ((payline.winMediaHeight || 50) / 100) * svgHeight;
+
+                const animClass =
+                  payline.winAnimationType === 'bounce'
+                    ? 'animate-bounce'
+                    : payline.winAnimationType === 'pulse'
+                    ? 'animate-pulse'
+                    : payline.winAnimationType === 'shake'
+                    ? 'animate-pulse scale-[1.02]'
+                    : payline.winAnimationType === 'glow'
+                    ? 'shadow-[0_0_40px_rgba(245,158,11,1)] border-2 border-yellow-300'
+                    : '';
+
+                return (
+                  <foreignObject
+                    x={mediaX}
+                    y={mediaY}
+                    width={mediaW}
+                    height={mediaH}
+                    className="overflow-visible pointer-events-auto"
                   >
-                    {payline.winMediaType === 'video' ? (
-                      <video
-                        src={payline.winMediaUrl}
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                        className={`w-full h-full rounded-xl ${
-                          payline.winMediaFit === 'contain' ? 'object-contain' : 'object-cover'
-                        }`}
-                      />
-                    ) : (
-                      <img
-                        src={payline.winMediaUrl}
-                        alt={payline.name}
-                        className={`w-full h-full rounded-xl ${
-                          payline.winMediaFit === 'contain' ? 'object-contain' : 'object-cover'
-                        }`}
-                      />
-                    )}
-                    <div className="absolute -bottom-2.5 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-black text-[9px] font-black uppercase tracking-wider shadow-md whitespace-nowrap border border-yellow-200">
-                      {payline.name} ({payline.payoutMultiplier}x)
-                    </div>
-                  </motion.div>
-                </foreignObject>
-              )}
+                    <motion.div
+                      initial={{ opacity: 0, scale: isFullscreen ? 1 : 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.35, ease: 'easeOut' }}
+                      className={`w-full h-full flex flex-col items-center justify-center relative rounded-2xl overflow-hidden ${
+                        isFullscreen ? 'bg-black/40 backdrop-blur-[1px]' : 'bg-black/80 border-2 border-amber-400/80 shadow-2xl'
+                      } ${animClass}`}
+                      onMouseDown={(e) => !isFullscreen && handleMediaDragStart(e, payline.id)}
+                      onTouchStart={(e) => !isFullscreen && handleMediaDragStart(e, payline.id)}
+                    >
+                      {payline.winMediaType === 'video' ? (
+                        <video
+                          src={payline.winMediaUrl}
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
+                          className={`w-full h-full rounded-xl ${
+                            payline.winMediaFit === 'contain' ? 'object-contain' : 'object-cover'
+                          }`}
+                        />
+                      ) : (
+                        <img
+                          src={payline.winMediaUrl}
+                          alt={payline.name}
+                          className={`w-full h-full rounded-xl ${
+                            payline.winMediaFit === 'contain' ? 'object-contain' : 'object-cover'
+                          }`}
+                        />
+                      )}
+
+                      {/* Nome da Linha (Apenas se marcado para aparecer) */}
+                      {payline.showLineName && (
+                        <div className="absolute top-2 left-2 px-2.5 py-0.5 rounded-full bg-black/80 text-yellow-300 text-[10px] font-black uppercase tracking-wider border border-yellow-400/50 shadow-md">
+                          {payline.name}
+                        </div>
+                      )}
+
+                      {/* Indicador de arrasto da mídia (se não for fullscreen e estiver editando) */}
+                      {!isFullscreen && (isEditingPaylines || onUpdatePaylineMediaPos) && (
+                        <div className="absolute bottom-1 right-1 px-2 py-0.5 bg-black/90 text-cyan-300 text-[8px] font-black rounded border border-cyan-400 cursor-move uppercase">
+                          ✋ Arraste Mídia
+                        </div>
+                      )}
+                    </motion.div>
+                  </foreignObject>
+                );
+              })()}
 
               {/* 8. Custom Win Value Badge / Banner (Arrastável Livremente pelo ADM) */}
-              {(() => {
+              {(payline.showWinBadge !== false || isEditingPaylines) && (() => {
                 const customX = payline.winBadgePosX !== undefined 
                   ? (payline.winBadgePosX / 100) * svgWidth 
                   : (leftBadgeX + rightBadgeX) / 2;
@@ -447,47 +516,62 @@ export const PaylineOverlay: React.FC<PaylineOverlayProps> = ({
                     transform={`translate(${customX}, ${customY})`}
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.15, duration: 0.35, type: 'spring', stiffness: 300 }}
+                    transition={{ delay: 0.1, duration: 0.25, type: 'spring', stiffness: 350 }}
                     className="pointer-events-auto cursor-move select-none"
                     onMouseDown={(e) => handleBadgeDragStart(e, payline.id)}
                     onTouchStart={(e) => handleBadgeDragStart(e, payline.id)}
                   >
                     <rect
-                      x="-70"
-                      y="-20"
-                      width="140"
-                      height="40"
-                      rx="20"
+                      x="-65"
+                      y="-18"
+                      width="130"
+                      height="36"
+                      rx="18"
                       fill="rgba(0, 0, 0, 0.92)"
                       stroke={lineColor}
-                      strokeWidth="3"
-                      className="drop-shadow-[0_0_20px_rgba(245,158,11,0.95)]"
+                      strokeWidth="2.5"
+                      className="drop-shadow-[0_0_15px_rgba(245,158,11,0.9)]"
                     />
-                    <text
-                      x="0"
-                      y="-4"
-                      textAnchor="middle"
-                      fill="#fde047"
-                      fontSize="10"
-                      fontWeight="900"
-                      letterSpacing="1"
-                    >
-                      {payline.name.toUpperCase()}
-                    </text>
-                    <text
-                      x="0"
-                      y="10"
-                      textAnchor="middle"
-                      fill="#34d399"
-                      fontSize="11"
-                      fontWeight="900"
-                    >
-                      GANHO {payline.payoutMultiplier}x
-                    </text>
+                    {payline.showLineName ? (
+                      <>
+                        <text
+                          x="0"
+                          y="-3"
+                          textAnchor="middle"
+                          fill="#fde047"
+                          fontSize="9"
+                          fontWeight="900"
+                          letterSpacing="0.5"
+                        >
+                          {payline.name.toUpperCase()}
+                        </text>
+                        <text
+                          x="0"
+                          y="10"
+                          textAnchor="middle"
+                          fill="#34d399"
+                          fontSize="11"
+                          fontWeight="900"
+                        >
+                          GANHO {payline.payoutMultiplier}x
+                        </text>
+                      </>
+                    ) : (
+                      <text
+                        x="0"
+                        y="4"
+                        textAnchor="middle"
+                        fill="#34d399"
+                        fontSize="13"
+                        fontWeight="900"
+                      >
+                        GANHO {payline.payoutMultiplier}x
+                      </text>
+                    )}
                     {(isEditingPaylines || onUpdatePaylineBadgePos) && (
                       <text
                         x="0"
-                        y="28"
+                        y="26"
                         textAnchor="middle"
                         fill="#38bdf8"
                         fontSize="8"
