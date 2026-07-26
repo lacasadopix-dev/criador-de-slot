@@ -67,6 +67,8 @@ export const SlotReel: React.FC<SlotReelProps> = ({
 }) => {
   const [currentSymbols, setCurrentSymbols] = useState<SymbolType[]>(resultSymbols || ['Castle', 'Sword', 'Diamond']);
   const [renderStrip, setRenderStrip] = useState<SymbolType[]>(currentSymbols);
+  const [offsetY, setOffsetY] = useState(0);
+  const [blurPx, setBlurPx] = useState(0);
 
   const numRows = currentSymbols.length || 3;
 
@@ -113,13 +115,11 @@ export const SlotReel: React.FC<SlotReelProps> = ({
     if (!isSpinning && !isReelSpinning && resultSymbols && resultSymbols.length > 0) {
       setCurrentSymbols(resultSymbols);
       setRenderStrip(resultSymbols);
+      setOffsetY(0);
+      setBlurPx(0);
       animRef.current.y = 0;
       animRef.current.velocity = 0;
       animRef.current.state = 'IDLE';
-      if (stripRef.current) {
-        stripRef.current.style.transform = `translate3d(0, 0, 0)`;
-        stripRef.current.style.filter = 'none';
-      }
     }
   }, [resultSymbols, isSpinning, isReelSpinning]);
 
@@ -127,6 +127,12 @@ export const SlotReel: React.FC<SlotReelProps> = ({
   const tick = () => {
     const anim = animRef.current;
     if (anim.state === 'IDLE') return;
+
+    // Wait until the React state has committed the new strip to prevent a 1-frame mismatch
+    if (renderStrip.length !== anim.strip.length) {
+      requestAnimationFrame(tick);
+      return;
+    }
 
     const { numRows: currentNumRows, resultSymbols: targetResult, onLandingComplete: landingDone } = callbacksRef.current;
 
@@ -174,18 +180,13 @@ export const SlotReel: React.FC<SlotReelProps> = ({
           anim.velocity = 0;
           anim.state = 'IDLE';
 
-          // Commit final symbols to state
+          // Commit final symbols and reset state back to 3 items in a single synchronized batched update!
           const finalSymbols = targetResult && targetResult.length > 0 ? targetResult : currentSymbols;
           setCurrentSymbols(finalSymbols);
           setRenderStrip(finalSymbols);
+          setOffsetY(0);
+          setBlurPx(0);
           
-          // Reset transform to flat idle state
-          if (stripRef.current) {
-            stripRef.current.style.transform = `translate3d(0, 0, 0)`;
-            stripRef.current.style.filter = 'none';
-          }
-          
-          // Trigger complete
           landingDone?.();
           return;
         }
@@ -206,10 +207,10 @@ export const SlotReel: React.FC<SlotReelProps> = ({
       
       // Calculate dynamic physical motion blur
       const blurMultiplier = spinStyle === 'turbo' ? 4.5 : 3.5;
-      const blurPx = Math.min(3.5, anim.velocity * blurMultiplier);
+      const blur = Math.min(3.5, anim.velocity * blurMultiplier);
 
       stripRef.current.style.transform = `translate3d(0, ${translateY}%, 0)`;
-      stripRef.current.style.filter = blurPx > 0.1 ? `blur(${blurPx}px)` : 'none';
+      stripRef.current.style.filter = blur > 0.1 ? `blur(${blur}px)` : 'none';
     }
 
     // Frame recursion
@@ -235,6 +236,8 @@ export const SlotReel: React.FC<SlotReelProps> = ({
         anim.lastIntegerY = 0;
 
         setRenderStrip(combinedStrip);
+        setOffsetY(0);
+        setBlurPx(0);
         requestAnimationFrame(tick);
       }
     } else {
@@ -252,7 +255,7 @@ export const SlotReel: React.FC<SlotReelProps> = ({
         }
 
         // Custom cascade landing distance based on column index
-        // Staggers the останавливается sequences beautifully
+        // Staggers the stop sequences beautifully
         const stoppingDistance = spinStyle === 'turbo' 
           ? 6 + colIndex * 2 
           : 12 + colIndex * 3;
@@ -283,6 +286,8 @@ export const SlotReel: React.FC<SlotReelProps> = ({
     transition: 'transform 0.15s ease-out',
   } : {};
 
+  const translateY = -offsetY * (100 / numRows);
+
   return (
     <div 
       style={transformStyle}
@@ -297,6 +302,8 @@ export const SlotReel: React.FC<SlotReelProps> = ({
         className="absolute top-0 left-0 w-full flex flex-col will-change-transform"
         style={{
           height: `${renderStrip.length * (100 / numRows)}%`,
+          transform: `translate3d(0, ${translateY}%, 0)`,
+          filter: blurPx > 0.1 ? `blur(${blurPx}px)` : 'none',
         }}
       >
         {renderStrip.map((symbol, i) => (
