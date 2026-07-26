@@ -265,10 +265,8 @@ export const SlotReel: React.FC<SlotReelProps> = ({
           visibleSymbols.push(anim.strip[(currentBase + j) % N]);
         }
 
-        // Custom cascade landing distance based on column index
-        const stoppingDistance = spinStyle === 'turbo' 
-          ? 6 + colIndex * 2 
-          : 12 + colIndex * 3;
+        // Uniform landing distance across all reels
+        const stoppingDistance = spinStyle === 'turbo' ? 6 : 10;
 
         const filler: SymbolType[] = [];
         for (let j = 0; j < stoppingDistance; j++) {

@@ -55,61 +55,17 @@ export const SlotMachine: React.FC<SlotMachineProps> = ({
 
   useEffect(() => {
     if (isSpinning) {
-      const startTimers: NodeJS.Timeout[] = [];
-      const stopTimers: NodeJS.Timeout[] = [];
+      // Start all reels simultaneously
+      setReelsSpinning(Array(effectiveNumReels).fill(true));
 
-      // Stagger parameters based on spinStyle for cascade start and stop
-      let startDelay = 100; // Time delay between each reel starting
-      let baseSpinDuration = 1100; // Spin duration for the first reel
-      let stopDelay = 220; // Delay between stopping each consecutive reel
+      const spinDuration = spinStyle === 'turbo' ? 350 : 850;
 
-      if (spinStyle === 'turbo') {
-        startDelay = 50;
-        baseSpinDuration = 350;
-        stopDelay = 90;
-      } else if (spinStyle === 'cascade') {
-        startDelay = 120;
-        baseSpinDuration = 1200;
-        stopDelay = 250;
-      } else if (spinStyle === 'zoom') {
-        startDelay = 80;
-        baseSpinDuration = 800;
-        stopDelay = 180;
-      } else if (spinStyle === 'random') {
-        startDelay = 100;
-        baseSpinDuration = 1000;
-        stopDelay = 200;
-      }
-
-      // Initialize all reels to idle first, then trigger them sequentially
-      setReelsSpinning(Array(effectiveNumReels).fill(false));
-
-      for (let col = 0; col < effectiveNumReels; col++) {
-        // Cascade Start
-        const sTimer = setTimeout(() => {
-          setReelsSpinning(prev => {
-            const next = [...prev];
-            next[col] = true;
-            return next;
-          });
-        }, col * startDelay);
-        startTimers.push(sTimer);
-
-        // Cascade Stop
-        const stopTime = col * startDelay + baseSpinDuration + col * stopDelay;
-        const pTimer = setTimeout(() => {
-          setReelsSpinning(prev => {
-            const next = [...prev];
-            next[col] = false;
-            return next;
-          });
-        }, stopTime);
-        stopTimers.push(pTimer);
-      }
+      const stopTimer = setTimeout(() => {
+        setReelsSpinning(Array(effectiveNumReels).fill(false));
+      }, spinDuration);
 
       return () => {
-        startTimers.forEach(t => clearTimeout(t));
-        stopTimers.forEach(t => clearTimeout(t));
+        clearTimeout(stopTimer);
       };
     } else {
       setReelsSpinning(Array(effectiveNumReels).fill(false));
