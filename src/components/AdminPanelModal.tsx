@@ -522,27 +522,37 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-4xl max-h-[94vh] bg-gradient-to-b from-[#1a0505] via-[#0f0a14] to-[#050914] border-2 border-red-600/60 rounded-2xl shadow-[0_0_60px_rgba(220,38,38,0.3)] flex flex-col overflow-hidden text-white">
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-0 bg-black/95 backdrop-blur-md animate-in fade-in duration-200 w-screen h-screen overflow-hidden">
+      <div className="relative w-full h-full max-w-none max-h-none bg-gradient-to-b from-[#1a0505] via-[#0f0a14] to-[#050914] border-0 rounded-none shadow-none flex flex-col overflow-hidden text-white">
         
         {/* Header */}
-        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-red-900/40 bg-red-950/40 shrink-0">
-          <div className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-red-500" />
-            <span className="text-sm sm:text-base font-black text-red-100 tracking-wider uppercase">
-              Painel Administrativo OddsBet
-            </span>
-            <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono font-bold">
-              Motor do Jogo v3.0
-            </span>
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-red-900/40 bg-red-950/40 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-red-500" />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm sm:text-lg font-black text-red-100 tracking-wider uppercase">
+                  Painel Administrativo OddsBet
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono font-bold hidden sm:inline-block">
+                  Motor do Jogo v3.0 (Tela Cheia)
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-400 hidden md:block">
+                Controle total do RTP, rolagens dos slots, linhas de pagamento, multiplicadores e posicionamento do layout
+              </p>
+            </div>
           </div>
 
-          <button 
-            onClick={onClose}
-            className="p-1.5 rounded-lg bg-black/50 hover:bg-white/10 text-gray-400 hover:text-white transition cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={onClose}
+              className="px-3 py-1.5 rounded-lg bg-red-600/80 hover:bg-red-500 text-white text-xs font-black uppercase tracking-wider transition cursor-pointer flex items-center gap-1.5 shadow-lg border border-red-400/40 active:scale-95"
+            >
+              <X className="w-4 h-4" />
+              <span>Sair do ADM</span>
+            </button>
+          </div>
         </div>
 
         {!isAuthenticated ? (
