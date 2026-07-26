@@ -187,9 +187,14 @@ export const SlotReel: React.FC<SlotReelProps> = ({
 
         // Check if finished bouncing and settled
         if (Math.abs(distance) < 0.003 && Math.abs(anim.velocity) < 0.003) {
-          anim.y = anim.targetY;
+          anim.y = 0;
           anim.velocity = 0;
           anim.state = 'IDLE';
+
+          if (stripRef.current) {
+            stripRef.current.style.transform = 'translate3d(0, 0%, 0)';
+            stripRef.current.style.filter = 'none';
+          }
 
           // Commit final symbols and reset state back to base numRows in a single synchronized update
           const finalSymbols = targetResult && targetResult.length > 0 ? targetResult : currentSymbols;
@@ -325,7 +330,7 @@ export const SlotReel: React.FC<SlotReelProps> = ({
 
           return (
             <div
-              key={i}
+              key={`slot-${renderStrip.length}-${i}`}
               style={{ height: `${100 / renderStrip.length}%` }}
               className="relative flex items-center justify-center w-full flex-1 min-h-0"
               {...(isSettled ? { 'data-symbol-col': colIndex, 'data-symbol-row': i } : {})}

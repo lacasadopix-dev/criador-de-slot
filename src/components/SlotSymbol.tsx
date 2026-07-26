@@ -18,7 +18,7 @@ export const SlotSymbol: React.FC<SlotSymbolProps> = ({ type, isWinning, customI
   const zoomScale = (symbolConfig?.scale || 100) / 100;
 
   const getSymbolContent = () => {
-    const iconClasses = "w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 transition-all";
+    const iconClasses = "w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20";
 
     if (imageUrl) {
       return (
@@ -33,7 +33,7 @@ export const SlotSymbol: React.FC<SlotSymbolProps> = ({ type, isWinning, customI
               WebkitBackfaceVisibility: 'hidden',
               backfaceVisibility: 'hidden',
             }}
-            className="w-full h-full absolute inset-0 transition-transform duration-75 pointer-events-none"
+            className="w-full h-full absolute inset-0 pointer-events-none"
           />
         </div>
       );
@@ -66,7 +66,7 @@ export const SlotSymbol: React.FC<SlotSymbolProps> = ({ type, isWinning, customI
   };
 
   return (
-    <div className={`relative flex items-center justify-center w-full h-full flex-1 min-h-0 symbol-container rounded-md overflow-hidden transition-all duration-200 ${isWinning ? 'box-gold-glow border-2 border-yellow-400 z-10 scale-[1.02]' : ''}`}>
+    <div className={`relative flex items-center justify-center w-full h-full flex-1 min-h-0 symbol-container rounded-md overflow-hidden ${isWinning ? 'box-gold-glow border-2 border-yellow-400 z-10 scale-[1.02] transition-all duration-200' : ''}`}>
       <div className="w-full h-full flex items-center justify-center p-0.5">
         {getSymbolContent()}
       </div>
