@@ -122,13 +122,14 @@ export const SlotReel: React.FC<SlotReelProps> = ({
     }
   }, [resultSymbols, isSpinning, isReelSpinning]);
 
-  // Synchronize DOM transform whenever state settles to IDLE to prevent off-screen transform persistence
+  // Synchronize DOM transform whenever renderStrip settles back to base numRows length
   useLayoutEffect(() => {
-    if (animRef.current.state === 'IDLE' && stripRef.current) {
+    if (renderStrip.length === numRows && stripRef.current) {
       stripRef.current.style.transform = 'translate3d(0, 0%, 0)';
       stripRef.current.style.filter = 'none';
+      animRef.current.y = 0;
     }
-  });
+  }, [renderStrip.length, numRows]);
 
   // Mutable ref to hold latest tick function to avoid stale React closures
   const tickRef = useRef<() => void>();
@@ -185,19 +186,14 @@ export const SlotReel: React.FC<SlotReelProps> = ({
 
         // Check if finished bouncing and settled
         if (Math.abs(distance) < 0.005 && Math.abs(anim.velocity) < 0.005) {
-          anim.y = 0;
+          anim.y = anim.targetY;
           anim.velocity = 0;
           anim.state = 'IDLE';
 
-          // Commit final symbols and reset state back to 3 items in a single synchronized batched update
+          // Commit final symbols and reset state back to base numRows in a single synchronized update
           const finalSymbols = targetResult && targetResult.length > 0 ? targetResult : currentSymbols;
           setCurrentSymbols(finalSymbols);
           setRenderStrip(finalSymbols);
-          
-          if (stripRef.current) {
-            stripRef.current.style.transform = 'translate3d(0, 0%, 0)';
-            stripRef.current.style.filter = 'none';
-          }
           
           landingDone?.();
           return;
@@ -241,7 +237,7 @@ export const SlotReel: React.FC<SlotReelProps> = ({
 
     if (isReelSpinning) {
       // PHASE A: ENTER ACCELERATION
-      if (anim.state === 'IDLE' || anim.state === 'STOPPED') {
+      if (anim.state !== 'ACCELERATING' && anim.state !== 'CRUISING') {
         const startSymbols = [...currentSymbols];
         const combinedStrip = [...startSymbols, ...spinningStrip];
 
@@ -303,7 +299,7 @@ export const SlotReel: React.FC<SlotReelProps> = ({
     <div 
       data-reel-col={colIndex}
       style={transformStyle}
-      className={`relative flex-1 h-full max-w-[120px] overflow-hidden rounded-md sm:rounded-xl transition-all ${
+      className={`relative flex-1 h-full max-w-[120px] overflow-hidden rounded-md sm:rounded-xl ${
         showReelBg ? 'bg-black/60 shadow-[inset_0_0_30px_rgba(0,0,0,0.8)]' : 'bg-transparent'
       } ${
         showReelBorders ? 'border-x sm:border-x-2 border-[#4d3d00]' : 'border-none'

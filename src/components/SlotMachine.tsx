@@ -138,8 +138,19 @@ export const SlotMachine: React.FC<SlotMachineProps> = ({
     return [];
   }, [grid, paylines, isSpinning, reelsSpinning, effectiveNumReels, effectiveNumRows, isEditingPaylines, testPaylineId, selectedPaylineId]);
 
+  // Safety watchdog timer: ensure isSpinning resolves if reels take too long or tab loses focus
+  useEffect(() => {
+    if (isSpinning) {
+      const maxSpinDuration = spinStyle === 'turbo' ? 2500 : 4500;
+      const watchdogTimer = setTimeout(() => {
+        onAllStoppedRef.current?.();
+      }, maxSpinDuration);
+      return () => clearTimeout(watchdogTimer);
+    }
+  }, [isSpinning, spinStyle]);
+
   const handleLandingComplete = (colIndex: number) => {
-    if (colIndex === effectiveNumReels - 1 && isSpinning) {
+    if (colIndex === effectiveNumReels - 1) {
       onAllStoppedRef.current?.();
     }
   };
