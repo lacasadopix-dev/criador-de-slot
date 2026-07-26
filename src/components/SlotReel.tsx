@@ -1,5 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { motion, useAnimation } from 'motion/react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { SymbolType, SymbolImageConfig } from '../types';
 import { SlotSymbol } from './SlotSymbol';
 
@@ -20,6 +19,38 @@ interface SlotReelProps {
 
 const ALL_SYMBOLS: SymbolType[] = ['King', 'Queen', 'Crown', 'Lion', 'Sword', 'Shield', 'Castle', 'Diamond', 'Coin', 'Dragon'];
 
+// Shared audio context for synchronized click sounds
+let globalAudioCtx: AudioContext | null = null;
+
+const playClickSound = () => {
+  try {
+    if (!globalAudioCtx) {
+      globalAudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    if (globalAudioCtx.state === 'suspended') {
+      globalAudioCtx.resume();
+    }
+    
+    const osc = globalAudioCtx.createOscillator();
+    const gain = globalAudioCtx.createGain();
+    
+    // Low mechanical wood-block click
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(110, globalAudioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(10, globalAudioCtx.currentTime + 0.04);
+    
+    gain.gain.setValueAtTime(0.04, globalAudioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, globalAudioCtx.currentTime + 0.04);
+    
+    osc.connect(gain);
+    gain.connect(globalAudioCtx.destination);
+    osc.start();
+    osc.stop(globalAudioCtx.currentTime + 0.04);
+  } catch (e) {
+    // Web audio blocked or unsupported
+  }
+};
+
 export const SlotReel: React.FC<SlotReelProps> = ({ 
   isSpinning,
   isReelSpinning,
@@ -35,139 +66,222 @@ export const SlotReel: React.FC<SlotReelProps> = ({
   onLandingComplete,
 }) => {
   const [currentSymbols, setCurrentSymbols] = useState<SymbolType[]>(resultSymbols || ['Castle', 'Sword', 'Diamond']);
-  const controls = useAnimation();
+  const [renderStrip, setRenderStrip] = useState<SymbolType[]>(currentSymbols);
 
   const numRows = currentSymbols.length || 3;
 
-  // Generate a deterministic reel strip with 15 symbols for spinning animation
+  // 1. Generate unique independent random strip for each column
   const spinningStrip = useMemo(() => {
-    return Array.from({ length: 15 }).map((_, i) => ALL_SYMBOLS[(i + colIndex * 3) % ALL_SYMBOLS.length]);
+    const base = [...ALL_SYMBOLS];
+    const uniqueStrip: SymbolType[] = [];
+    // Generate a long unique pattern to give each reel distinct personality
+    for (let i = 0; i < 30; i++) {
+      const idx = (i * 7 + colIndex * 13) % base.length;
+      uniqueStrip.push(base[idx]);
+    }
+    return uniqueStrip;
   }, [colIndex]);
 
+  // Elements and Animation Refs
+  const stripRef = useRef<HTMLDivElement>(null);
+  const animRef = useRef({
+    y: 0,
+    velocity: 0,
+    targetY: 0,
+    state: 'IDLE' as 'IDLE' | 'ACCELERATING' | 'CRUISING' | 'DECELERATING' | 'STOPPED',
+    strip: [] as SymbolType[],
+    lastIntegerY: 0,
+  });
+
+  // Safe reference storage to bypass React stale closures in requestAnimationFrame
+  const callbacksRef = useRef({
+    numRows,
+    resultSymbols,
+    onLandingComplete,
+  });
+
   useEffect(() => {
-    if (resultSymbols && resultSymbols.length > 0 && !isSpinning && !isReelSpinning) {
+    callbacksRef.current = {
+      numRows,
+      resultSymbols,
+      onLandingComplete,
+    };
+  }, [numRows, resultSymbols, onLandingComplete]);
+
+  // Synchronize base symbols when completely idle
+  useEffect(() => {
+    if (!isSpinning && !isReelSpinning && resultSymbols && resultSymbols.length > 0) {
       setCurrentSymbols(resultSymbols);
+      setRenderStrip(resultSymbols);
+      animRef.current.y = 0;
+      animRef.current.velocity = 0;
+      animRef.current.state = 'IDLE';
+      if (stripRef.current) {
+        stripRef.current.style.transform = `translate3d(0, 0, 0)`;
+        stripRef.current.style.filter = 'none';
+      }
     }
   }, [resultSymbols, isSpinning, isReelSpinning]);
 
-  useEffect(() => {
-    const isOddCol = colIndex % 2 !== 0;
+  // 2. The Core 60 FPS requestAnimationFrame Tick Loop
+  const tick = () => {
+    const anim = animRef.current;
+    if (anim.state === 'IDLE') return;
 
-    if (isReelSpinning) {
-      if (spinStyle === 'cascade') {
-        controls.start({
-          y: ['-200%', '0%'],
-          transition: {
-            repeat: Infinity,
-            repeatType: 'loop',
-            duration: 0.3,
-            ease: 'linear',
-          }
-        });
-      } else if (spinStyle === 'random') {
-        controls.start({
-          y: isOddCol ? ['0%', '-200%'] : ['-200%', '0%'],
-          transition: {
-            repeat: Infinity,
-            repeatType: 'loop',
-            duration: 0.32,
-            ease: 'linear',
-          }
-        });
-      } else if (spinStyle === 'zoom') {
-        controls.start({
-          scale: [0.94, 1.04, 0.94],
-          opacity: [0.8, 1, 0.8],
-          transition: {
-            repeat: Infinity,
-            repeatType: 'reverse',
-            duration: 0.22,
-            ease: 'easeInOut',
-          }
-        });
-      } else if (spinStyle === 'turbo') {
-        controls.start({
-          y: ['0%', '-300%'],
-          transition: {
-            repeat: Infinity,
-            repeatType: 'loop',
-            duration: 0.14,
-            ease: 'linear',
-          }
-        });
-      } else {
-        // Standard Casino Slot Roll ('smooth')
-        // Continuous top-to-bottom vertical scroll
-        controls.start({
-          y: ['0%', '-300%'],
-          transition: {
-            repeat: Infinity,
-            repeatType: 'loop',
-            duration: 0.28,
-            ease: 'linear',
-          }
-        });
-      }
-    } else {
-      controls.stop();
-      if (resultSymbols && resultSymbols.length > 0) {
-        setCurrentSymbols(resultSymbols);
-      }
+    const { numRows: currentNumRows, resultSymbols: targetResult, onLandingComplete: landingDone } = callbacksRef.current;
 
-      if (spinStyle === 'cascade') {
-        controls.set({ y: '-25%', scale: 1, opacity: 1 });
-        controls.start({
-          y: '0%',
-          transition: { type: 'spring', stiffness: 260, damping: 15 }
-        }).then(() => {
-          onLandingComplete?.();
-        });
-      } else if (spinStyle === 'random') {
-        const startY = isOddCol ? '20%' : '-20%';
-        controls.set({ y: startY, scale: 1, opacity: 1 });
-        controls.start({
-          y: '0%',
-          transition: { type: 'spring', stiffness: 280, damping: 16 }
-        }).then(() => {
-          onLandingComplete?.();
-        });
-      } else if (spinStyle === 'zoom') {
-        controls.set({ scale: 0.88, opacity: 0.6, y: '0%' });
-        controls.start({
-          scale: 1,
-          opacity: 1,
-          transition: { type: 'spring', stiffness: 350, damping: 20 }
-        }).then(() => {
-          onLandingComplete?.();
-        });
-      } else if (spinStyle === 'turbo') {
-        controls.set({ y: '-10%', scale: 1, opacity: 1 });
-        controls.start({
-          y: '0%',
-          transition: { type: 'tween', duration: 0.08, ease: 'easeOut' }
-        }).then(() => {
-          onLandingComplete?.();
-        });
+    // PHYSICS UPDATE STATE MACHINE
+    if (anim.state === 'ACCELERATING') {
+      const accel = spinStyle === 'turbo' ? 0.08 : 0.04;
+      const maxSpeed = spinStyle === 'turbo' ? 0.95 : 0.70; // High speed for high-fidelity motion blur
+      
+      anim.velocity = Math.min(maxSpeed, anim.velocity + accel);
+      anim.y += anim.velocity;
+
+      // Loop infinitely during spin
+      if (anim.y >= anim.strip.length - currentNumRows) {
+        anim.y = anim.y % (anim.strip.length - currentNumRows);
+      }
+    } else if (anim.state === 'CRUISING') {
+      anim.y += anim.velocity;
+      if (anim.y >= anim.strip.length - currentNumRows) {
+        anim.y = anim.y % (anim.strip.length - currentNumRows);
+      }
+    } else if (anim.state === 'DECELERATING') {
+      const distance = anim.targetY - anim.y;
+
+      if (distance > 2.5) {
+        // Linear deceleration while further away
+        const decelRate = spinStyle === 'turbo' ? 0.035 : 0.015;
+        anim.velocity = Math.max(0.12, anim.velocity - decelRate);
+        anim.y += anim.velocity;
       } else {
-        // Crisp smooth landing without stutter or jumping bounce
-        controls.set({ scale: 1, opacity: 1 });
-        controls.start({
-          y: '0%',
-          transition: { type: 'tween', duration: 0.06, ease: 'easeOut' }
-        }).then(() => {
-          onLandingComplete?.();
-        });
+        // High-precision Spring-Damper System for standard/cascade bounce
+        // Gives the exact snappy drop & organic impact bounce of Fortune Tiger
+        const springK = spinStyle === 'turbo' ? 0.22 : 0.12;
+        const dampingC = spinStyle === 'turbo' ? 0.55 : 0.42;
+
+        const springForce = springK * distance;
+        const dampingForce = dampingC * anim.velocity;
+        const force = springForce - dampingForce;
+
+        anim.velocity += force;
+        anim.y += anim.velocity;
+
+        // Check if finished bouncing and settled
+        if (Math.abs(distance) < 0.005 && Math.abs(anim.velocity) < 0.005) {
+          anim.y = anim.targetY;
+          anim.velocity = 0;
+          anim.state = 'IDLE';
+
+          // Commit final symbols to state
+          const finalSymbols = targetResult && targetResult.length > 0 ? targetResult : currentSymbols;
+          setCurrentSymbols(finalSymbols);
+          setRenderStrip(finalSymbols);
+          
+          // Reset transform to flat idle state
+          if (stripRef.current) {
+            stripRef.current.style.transform = `translate3d(0, 0, 0)`;
+            stripRef.current.style.filter = 'none';
+          }
+          
+          // Trigger complete
+          landingDone?.();
+          return;
+        }
       }
     }
-  }, [isReelSpinning, resultSymbols, controls, spinStyle, colIndex, onLandingComplete]);
+
+    // PLAY SOUND SENSORS
+    const currentIntegerY = Math.floor(anim.y);
+    if (currentIntegerY !== anim.lastIntegerY && anim.state !== 'IDLE') {
+      anim.lastIntegerY = currentIntegerY;
+      playClickSound();
+    }
+
+    // DIRECT DOM TRANSFORM UPDATES (Crucial for stutter-free 60 FPS performance)
+    if (stripRef.current) {
+      const itemHeightPct = 100 / currentNumRows;
+      const translateY = -anim.y * itemHeightPct;
+      
+      // Calculate dynamic physical motion blur
+      const blurMultiplier = spinStyle === 'turbo' ? 4.5 : 3.5;
+      const blurPx = Math.min(3.5, anim.velocity * blurMultiplier);
+
+      stripRef.current.style.transform = `translate3d(0, ${translateY}%, 0)`;
+      stripRef.current.style.filter = blurPx > 0.1 ? `blur(${blurPx}px)` : 'none';
+    }
+
+    // Frame recursion
+    if (anim.state !== 'IDLE') {
+      requestAnimationFrame(tick);
+    }
+  };
+
+  // 3. Handle external trigger hooks from SlotMachine
+  useEffect(() => {
+    const anim = animRef.current;
+
+    if (isReelSpinning) {
+      // PHASE A: ENTER ACCELERATION
+      if (anim.state === 'IDLE' || anim.state === 'STOPPED') {
+        const startSymbols = [...currentSymbols];
+        const combinedStrip = [...startSymbols, ...spinningStrip];
+
+        anim.strip = combinedStrip;
+        anim.y = 0;
+        anim.velocity = 0;
+        anim.state = 'ACCELERATING';
+        anim.lastIntegerY = 0;
+
+        setRenderStrip(combinedStrip);
+        requestAnimationFrame(tick);
+      }
+    } else {
+      // PHASE B: ENTER DECELERATION & ORGANIC LANDING
+      if (anim.state === 'ACCELERATING' || anim.state === 'CRUISING') {
+        const currentY = anim.y;
+        const currentBase = Math.floor(currentY);
+        const frac = currentY - currentBase;
+
+        // Extract currently visible symbols cleanly to ensure 100% flicker-free transition
+        const N = anim.strip.length;
+        const visibleSymbols: SymbolType[] = [];
+        for (let j = 0; j < numRows + 3; j++) {
+          visibleSymbols.push(anim.strip[(currentBase + j) % N]);
+        }
+
+        // Custom cascade landing distance based on column index
+        // Staggers the останавливается sequences beautifully
+        const stoppingDistance = spinStyle === 'turbo' 
+          ? 6 + colIndex * 2 
+          : 12 + colIndex * 3;
+
+        const filler: SymbolType[] = [];
+        for (let j = 0; j < stoppingDistance; j++) {
+          filler.push(ALL_SYMBOLS[(j + colIndex * 3) % ALL_SYMBOLS.length]);
+        }
+
+        const targetSymbols = resultSymbols && resultSymbols.length > 0 
+          ? resultSymbols 
+          : (['Castle', 'Sword', 'Diamond'] as SymbolType[]);
+
+        const landingStrip = [...visibleSymbols, ...filler, ...targetSymbols];
+
+        anim.strip = landingStrip;
+        anim.y = frac;
+        anim.targetY = landingStrip.length - numRows;
+        anim.state = 'DECELERATING';
+
+        setRenderStrip(landingStrip);
+      }
+    }
+  }, [isReelSpinning, resultSymbols, spinningStrip, numRows, colIndex, spinStyle]);
 
   const transformStyle: React.CSSProperties = individualPosition ? {
     transform: `translate(${individualPosition.offsetX || 0}%, ${individualPosition.offsetY || 0}%) scale(${(individualPosition.scale || 100) / 100})`,
     transition: 'transform 0.15s ease-out',
   } : {};
-
-  // Each symbol in the spinning strip has height matching 1/numRows of the reel container (e.g. 33.333% for 3 rows)
-  const itemHeightPct = 100 / numRows;
 
   return (
     <div 
@@ -178,49 +292,28 @@ export const SlotReel: React.FC<SlotReelProps> = ({
         showReelBorders ? 'border-x sm:border-x-2 border-[#4d3d00]' : 'border-none'
       }`}
     >
-      <motion.div 
-        animate={controls}
-        className={`absolute top-0 left-0 w-full h-full flex flex-col ${
-          isReelSpinning ? 'blur-[0.5px] opacity-95' : ''
-        }`}
+      <div 
+        ref={stripRef}
+        className="absolute top-0 left-0 w-full flex flex-col will-change-transform"
+        style={{
+          height: `${renderStrip.length * (100 / numRows)}%`,
+        }}
       >
-        {isReelSpinning ? (
-          <div className="w-full flex flex-col">
-            {spinningStrip.map((sym, i) => (
-              <div 
-                key={i} 
-                style={{ height: `${itemHeightPct}%`, minHeight: `${itemHeightPct}%` }}
-                className="w-full flex items-center justify-center p-1 shrink-0"
-              >
-                <SlotSymbol 
-                  type={sym} 
-                  customImage={customSymbols?.[sym]} 
-                  symbolConfig={customSymbolConfigs?.[sym]}
-                />
-              </div>
-            ))}
+        {renderStrip.map((symbol, i) => (
+          <div
+            key={i}
+            style={{ height: `${100 / renderStrip.length}%` }}
+            className="relative flex items-center justify-center w-full flex-1 min-h-0"
+          >
+            <SlotSymbol 
+              type={symbol} 
+              isWinning={animRef.current.state === 'IDLE' ? winningRows?.has(i) : false}
+              customImage={customSymbols?.[symbol]} 
+              symbolConfig={customSymbolConfigs?.[symbol]}
+            />
           </div>
-        ) : (
-          <div className="flex flex-col h-full w-full py-1">
-            {currentSymbols.map((symbol, i) => (
-              <div
-                key={i}
-                data-symbol-col={colIndex}
-                data-symbol-row={i}
-                className="relative flex items-center justify-center w-full flex-1 min-h-0"
-              >
-                <SlotSymbol 
-                  type={symbol} 
-                  isWinning={winningRows?.has(i)}
-                  customImage={customSymbols?.[symbol]} 
-                  symbolConfig={customSymbolConfigs?.[symbol]}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-      </motion.div>
+        ))}
+      </div>
     </div>
   );
 };
-

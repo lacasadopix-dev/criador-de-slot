@@ -55,42 +55,61 @@ export const SlotMachine: React.FC<SlotMachineProps> = ({
 
   useEffect(() => {
     if (isSpinning) {
-      setReelsSpinning(Array(effectiveNumReels).fill(true));
+      const startTimers: NodeJS.Timeout[] = [];
+      const stopTimers: NodeJS.Timeout[] = [];
 
-      let baseSpinTime = 1000;
-      let reelDelay = 220;
+      // Stagger parameters based on spinStyle for cascade start and stop
+      let startDelay = 100; // Time delay between each reel starting
+      let baseSpinDuration = 1100; // Spin duration for the first reel
+      let stopDelay = 220; // Delay between stopping each consecutive reel
 
       if (spinStyle === 'turbo') {
-        baseSpinTime = 400;
-        reelDelay = 100;
+        startDelay = 50;
+        baseSpinDuration = 350;
+        stopDelay = 90;
       } else if (spinStyle === 'cascade') {
-        baseSpinTime = 700;
-        reelDelay = 200;
+        startDelay = 120;
+        baseSpinDuration = 1200;
+        stopDelay = 250;
       } else if (spinStyle === 'zoom') {
-        baseSpinTime = 600;
-        reelDelay = 180;
+        startDelay = 80;
+        baseSpinDuration = 800;
+        stopDelay = 180;
       } else if (spinStyle === 'random') {
-        baseSpinTime = 800;
-        reelDelay = 180;
+        startDelay = 100;
+        baseSpinDuration = 1000;
+        stopDelay = 200;
       }
 
-      const timers: NodeJS.Timeout[] = [];
+      // Initialize all reels to idle first, then trigger them sequentially
+      setReelsSpinning(Array(effectiveNumReels).fill(false));
 
       for (let col = 0; col < effectiveNumReels; col++) {
-        const colOrder = spinStyle === 'random' ? (col % 2 === 0 ? col : effectiveNumReels - col) : col;
-        const delay = baseSpinTime + Math.abs(colOrder) * reelDelay;
-        const timer = setTimeout(() => {
+        // Cascade Start
+        const sTimer = setTimeout(() => {
+          setReelsSpinning(prev => {
+            const next = [...prev];
+            next[col] = true;
+            return next;
+          });
+        }, col * startDelay);
+        startTimers.push(sTimer);
+
+        // Cascade Stop
+        const stopTime = col * startDelay + baseSpinDuration + col * stopDelay;
+        const pTimer = setTimeout(() => {
           setReelsSpinning(prev => {
             const next = [...prev];
             next[col] = false;
             return next;
           });
-        }, delay);
-        timers.push(timer);
+        }, stopTime);
+        stopTimers.push(pTimer);
       }
 
       return () => {
-        timers.forEach(t => clearTimeout(t));
+        startTimers.forEach(t => clearTimeout(t));
+        stopTimers.forEach(t => clearTimeout(t));
       };
     } else {
       setReelsSpinning(Array(effectiveNumReels).fill(false));
