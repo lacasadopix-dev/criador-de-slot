@@ -114,26 +114,36 @@ export const PaylineOverlay: React.FC<PaylineOverlayProps> = ({
       const points: Array<{ x: number; y: number }> = [];
 
       winLine.positions.forEach(pos => {
+        const safeCol = Math.max(0, Math.min(numReels - 1, pos.col));
+        const safeRow = Math.max(0, Math.min(numRows - 1, pos.row));
+
         const symbolEl = container.querySelector(
-          `[data-symbol-col="${pos.col}"][data-symbol-row="${pos.row}"]`
+          `[data-symbol-col="${safeCol}"][data-symbol-row="${safeRow}"]`
         );
 
         if (symbolEl) {
           const innerContainer = symbolEl.querySelector('.symbol-container') || symbolEl;
           const rect = innerContainer.getBoundingClientRect();
-          // Center point of this symbol relative to container
           points.push({
             x: rect.left + rect.width / 2 - containerRect.left,
             y: rect.top + rect.height / 2 - containerRect.top,
           });
         } else {
-          // Precise proportional center calculation
-          const colWidth = containerRect.width / numReels;
-          const rowHeight = containerRect.height / numRows;
-          points.push({
-            x: (pos.col + 0.5) * colWidth,
-            y: (pos.row + 0.5) * rowHeight,
-          });
+          const reelEl = container.querySelector(`[data-reel-col="${safeCol}"]`);
+          if (reelEl) {
+            const reelRect = reelEl.getBoundingClientRect();
+            points.push({
+              x: reelRect.left + reelRect.width / 2 - containerRect.left,
+              y: reelRect.top + ((safeRow + 0.5) / numRows) * reelRect.height - containerRect.top,
+            });
+          } else {
+            const colWidth = containerRect.width / numReels;
+            const rowHeight = containerRect.height / numRows;
+            points.push({
+              x: (safeCol + 0.5) * colWidth,
+              y: (safeRow + 0.5) * rowHeight,
+            });
+          }
         }
       });
 
@@ -225,6 +235,9 @@ export const PaylineOverlay: React.FC<PaylineOverlayProps> = ({
 
           // Use direct pixel coordinates relative to slot machine container
           const points = positions.map((pos, pIdx) => {
+            const safeCol = Math.max(0, Math.min(numReels - 1, pos.col));
+            const safeRow = Math.max(0, Math.min(numRows - 1, pos.row));
+
             if (measuredPoints && measuredPoints[pIdx]) {
               return {
                 x: measuredPoints[pIdx].x,
@@ -232,8 +245,8 @@ export const PaylineOverlay: React.FC<PaylineOverlayProps> = ({
               };
             }
             return {
-              x: ((pos.col + 0.5) / numReels) * svgWidth,
-              y: ((pos.row + 0.5) / numRows) * svgHeight,
+              x: ((safeCol + 0.5) / numReels) * svgWidth,
+              y: ((safeRow + 0.5) / numRows) * svgHeight,
             };
           });
 

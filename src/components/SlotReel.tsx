@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useState, useMemo, useRef } from 'react';
 import { SymbolType, SymbolImageConfig } from '../types';
 import { SlotSymbol } from './SlotSymbol';
 
@@ -67,8 +67,6 @@ export const SlotReel: React.FC<SlotReelProps> = ({
 }) => {
   const [currentSymbols, setCurrentSymbols] = useState<SymbolType[]>(resultSymbols || ['Castle', 'Sword', 'Diamond']);
   const [renderStrip, setRenderStrip] = useState<SymbolType[]>(currentSymbols);
-  const [offsetY, setOffsetY] = useState(0);
-  const [blurPx, setBlurPx] = useState(0);
 
   const numRows = currentSymbols.length || 3;
 
@@ -76,7 +74,6 @@ export const SlotReel: React.FC<SlotReelProps> = ({
   const spinningStrip = useMemo(() => {
     const base = [...ALL_SYMBOLS];
     const uniqueStrip: SymbolType[] = [];
-    // Generate a long unique pattern to give each reel distinct personality
     for (let i = 0; i < 30; i++) {
       const idx = (i * 7 + colIndex * 13) % base.length;
       uniqueStrip.push(base[idx]);
@@ -115,22 +112,35 @@ export const SlotReel: React.FC<SlotReelProps> = ({
     if (!isSpinning && !isReelSpinning && resultSymbols && resultSymbols.length > 0) {
       setCurrentSymbols(resultSymbols);
       setRenderStrip(resultSymbols);
-      setOffsetY(0);
-      setBlurPx(0);
       animRef.current.y = 0;
       animRef.current.velocity = 0;
       animRef.current.state = 'IDLE';
+      if (stripRef.current) {
+        stripRef.current.style.transform = 'translate3d(0, 0%, 0)';
+        stripRef.current.style.filter = 'none';
+      }
     }
   }, [resultSymbols, isSpinning, isReelSpinning]);
+
+  // Synchronize DOM transform whenever state settles to IDLE to prevent off-screen transform persistence
+  useLayoutEffect(() => {
+    if (animRef.current.state === 'IDLE' && stripRef.current) {
+      stripRef.current.style.transform = 'translate3d(0, 0%, 0)';
+      stripRef.current.style.filter = 'none';
+    }
+  });
+
+  // Mutable ref to hold latest tick function to avoid stale React closures
+  const tickRef = useRef<() => void>();
 
   // 2. The Core 60 FPS requestAnimationFrame Tick Loop
   const tick = () => {
     const anim = animRef.current;
     if (anim.state === 'IDLE') return;
 
-    // Wait until the React state has committed the new strip to prevent a 1-frame mismatch
-    if (renderStrip.length !== anim.strip.length) {
-      requestAnimationFrame(tick);
+    // Check DOM children size to verify React has committed renderStrip to DOM
+    if (!stripRef.current || stripRef.current.children.length !== anim.strip.length) {
+      requestAnimationFrame(() => tickRef.current?.());
       return;
     }
 
@@ -139,7 +149,7 @@ export const SlotReel: React.FC<SlotReelProps> = ({
     // PHYSICS UPDATE STATE MACHINE
     if (anim.state === 'ACCELERATING') {
       const accel = spinStyle === 'turbo' ? 0.08 : 0.04;
-      const maxSpeed = spinStyle === 'turbo' ? 0.95 : 0.70; // High speed for high-fidelity motion blur
+      const maxSpeed = spinStyle === 'turbo' ? 0.95 : 0.70;
       
       anim.velocity = Math.min(maxSpeed, anim.velocity + accel);
       anim.y += anim.velocity;
@@ -162,8 +172,7 @@ export const SlotReel: React.FC<SlotReelProps> = ({
         anim.velocity = Math.max(0.12, anim.velocity - decelRate);
         anim.y += anim.velocity;
       } else {
-        // High-precision Spring-Damper System for standard/cascade bounce
-        // Gives the exact snappy drop & organic impact bounce of Fortune Tiger
+        // High-precision Spring-Damper System for bounce
         const springK = spinStyle === 'turbo' ? 0.22 : 0.12;
         const dampingC = spinStyle === 'turbo' ? 0.55 : 0.42;
 
@@ -176,16 +185,19 @@ export const SlotReel: React.FC<SlotReelProps> = ({
 
         // Check if finished bouncing and settled
         if (Math.abs(distance) < 0.005 && Math.abs(anim.velocity) < 0.005) {
-          anim.y = anim.targetY;
+          anim.y = 0;
           anim.velocity = 0;
           anim.state = 'IDLE';
 
-          // Commit final symbols and reset state back to 3 items in a single synchronized batched update!
+          // Commit final symbols and reset state back to 3 items in a single synchronized batched update
           const finalSymbols = targetResult && targetResult.length > 0 ? targetResult : currentSymbols;
           setCurrentSymbols(finalSymbols);
           setRenderStrip(finalSymbols);
-          setOffsetY(0);
-          setBlurPx(0);
+          
+          if (stripRef.current) {
+            stripRef.current.style.transform = 'translate3d(0, 0%, 0)';
+            stripRef.current.style.filter = 'none';
+          }
           
           landingDone?.();
           return;
@@ -200,12 +212,11 @@ export const SlotReel: React.FC<SlotReelProps> = ({
       playClickSound();
     }
 
-    // DIRECT DOM TRANSFORM UPDATES (Crucial for stutter-free 60 FPS performance)
+    // DIRECT DOM TRANSFORM UPDATES
     if (stripRef.current) {
       const itemHeightPct = 100 / currentNumRows;
       const translateY = -anim.y * itemHeightPct;
       
-      // Calculate dynamic physical motion blur
       const blurMultiplier = spinStyle === 'turbo' ? 4.5 : 3.5;
       const blur = Math.min(3.5, anim.velocity * blurMultiplier);
 
@@ -215,9 +226,14 @@ export const SlotReel: React.FC<SlotReelProps> = ({
 
     // Frame recursion
     if (anim.state !== 'IDLE') {
-      requestAnimationFrame(tick);
+      requestAnimationFrame(() => tickRef.current?.());
     }
   };
+
+  // Keep tickRef updated with latest render's tick closure on every commit
+  useEffect(() => {
+    tickRef.current = tick;
+  });
 
   // 3. Handle external trigger hooks from SlotMachine
   useEffect(() => {
@@ -236,9 +252,7 @@ export const SlotReel: React.FC<SlotReelProps> = ({
         anim.lastIntegerY = 0;
 
         setRenderStrip(combinedStrip);
-        setOffsetY(0);
-        setBlurPx(0);
-        requestAnimationFrame(tick);
+        requestAnimationFrame(() => tickRef.current?.());
       }
     } else {
       // PHASE B: ENTER DECELERATION & ORGANIC LANDING
@@ -255,7 +269,6 @@ export const SlotReel: React.FC<SlotReelProps> = ({
         }
 
         // Custom cascade landing distance based on column index
-        // Staggers the stop sequences beautifully
         const stoppingDistance = spinStyle === 'turbo' 
           ? 6 + colIndex * 2 
           : 12 + colIndex * 3;
@@ -279,17 +292,16 @@ export const SlotReel: React.FC<SlotReelProps> = ({
         setRenderStrip(landingStrip);
       }
     }
-  }, [isReelSpinning, resultSymbols, spinningStrip, numRows, colIndex, spinStyle]);
+  }, [isReelSpinning, resultSymbols, spinningStrip, numRows, colIndex, spinStyle, currentSymbols]);
 
   const transformStyle: React.CSSProperties = individualPosition ? {
     transform: `translate(${individualPosition.offsetX || 0}%, ${individualPosition.offsetY || 0}%) scale(${(individualPosition.scale || 100) / 100})`,
     transition: 'transform 0.15s ease-out',
   } : {};
 
-  const translateY = -offsetY * (100 / numRows);
-
   return (
     <div 
+      data-reel-col={colIndex}
       style={transformStyle}
       className={`relative flex-1 h-full max-w-[120px] overflow-hidden rounded-md sm:rounded-xl transition-all ${
         showReelBg ? 'bg-black/60 shadow-[inset_0_0_30px_rgba(0,0,0,0.8)]' : 'bg-transparent'
@@ -302,24 +314,28 @@ export const SlotReel: React.FC<SlotReelProps> = ({
         className="absolute top-0 left-0 w-full flex flex-col will-change-transform"
         style={{
           height: `${renderStrip.length * (100 / numRows)}%`,
-          transform: `translate3d(0, ${translateY}%, 0)`,
-          filter: blurPx > 0.1 ? `blur(${blurPx}px)` : 'none',
+          transform: 'translate3d(0, 0%, 0)',
         }}
       >
-        {renderStrip.map((symbol, i) => (
-          <div
-            key={i}
-            style={{ height: `${100 / renderStrip.length}%` }}
-            className="relative flex items-center justify-center w-full flex-1 min-h-0"
-          >
-            <SlotSymbol 
-              type={symbol} 
-              isWinning={animRef.current.state === 'IDLE' ? winningRows?.has(i) : false}
-              customImage={customSymbols?.[symbol]} 
-              symbolConfig={customSymbolConfigs?.[symbol]}
-            />
-          </div>
-        ))}
+        {renderStrip.map((symbol, i) => {
+          const isSettled = renderStrip.length === numRows;
+
+          return (
+            <div
+              key={i}
+              style={{ height: `${100 / renderStrip.length}%` }}
+              className="relative flex items-center justify-center w-full flex-1 min-h-0"
+              {...(isSettled ? { 'data-symbol-col': colIndex, 'data-symbol-row': i } : {})}
+            >
+              <SlotSymbol 
+                type={symbol} 
+                isWinning={animRef.current.state === 'IDLE' ? winningRows?.has(i) : false}
+                customImage={customSymbols?.[symbol]} 
+                symbolConfig={customSymbolConfigs?.[symbol]}
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );
