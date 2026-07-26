@@ -25,6 +25,10 @@ interface GameStageProps {
   selectedElement?: string | null;
   onSelectElement?: (elementId: string | null) => void;
   onUpdateAdminConfig?: (newConfig: Partial<AdminConfig>) => void;
+  isEditingPaylines?: boolean;
+  selectedPaylineId?: string;
+  testPaylineId?: string | null;
+  onUpdatePaylineBadgePos?: (paylineId: string, xPct: number, yPct: number) => void;
 }
 
 interface QuickScaleToolbarProps {
@@ -232,6 +236,10 @@ export const GameStage: React.FC<GameStageProps> = ({
   selectedElement = null,
   onSelectElement,
   onUpdateAdminConfig,
+  isEditingPaylines = false,
+  selectedPaylineId,
+  testPaylineId,
+  onUpdatePaylineBadgePos,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [stageSize, setStageSize] = useState<{ width: number; height: number }>({ width: 360, height: 640 });
@@ -990,6 +998,10 @@ export const GameStage: React.FC<GameStageProps> = ({
               numReels={adminConfig.numReels}
               numRows={adminConfig.numRows}
               onAllReelsStopped={onAllReelsStopped}
+              isEditingPaylines={isEditingPaylines}
+              selectedPaylineId={selectedPaylineId}
+              testPaylineId={testPaylineId}
+              onUpdatePaylineBadgePos={onUpdatePaylineBadgePos}
             />
           </div>
         )}

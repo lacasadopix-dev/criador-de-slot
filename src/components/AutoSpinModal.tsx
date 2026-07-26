@@ -7,6 +7,7 @@ interface AutoSpinModalProps {
   currentBet: number;
   minBet: number;
   maxBet: number;
+  allowedBets?: number[];
   balance: number;
   turboMode: boolean;
   autoSpinCount: number;
@@ -23,6 +24,7 @@ export const AutoSpinModal: React.FC<AutoSpinModalProps> = ({
   currentBet,
   minBet,
   maxBet,
+  allowedBets,
   balance,
   turboMode,
   autoSpinCount,
@@ -44,8 +46,21 @@ export const AutoSpinModal: React.FC<AutoSpinModalProps> = ({
 
   if (!isOpen) return null;
 
+  const presetsList = allowedBets && allowedBets.length > 0 
+    ? allowedBets.filter(b => b >= minBet && b <= maxBet)
+    : [1, 5, 10, 25, 50, 100, 250, 500];
+
   const handleBetChange = (delta: number) => {
     setBetAmount(prev => {
+      if (presetsList.length > 0) {
+        if (delta > 0) {
+          const nextVal = presetsList.find(v => v > prev);
+          if (nextVal !== undefined) return nextVal;
+        } else {
+          const prevVal = [...presetsList].reverse().find(v => v < prev);
+          if (prevVal !== undefined) return prevVal;
+        }
+      }
       const updated = prev + delta;
       return Math.max(minBet, Math.min(maxBet, Math.round(updated * 100) / 100));
     });
@@ -200,7 +215,7 @@ export const AutoSpinModal: React.FC<AutoSpinModalProps> = ({
 
           {/* Quick Bet Presets */}
           <div className="grid grid-cols-4 gap-1.5 sm:gap-2 mt-2">
-            {[1, 5, 10, 25, 50, 100, 250, 500].map((val) => (
+            {presetsList.map((val) => (
               <button
                 key={val}
                 type="button"

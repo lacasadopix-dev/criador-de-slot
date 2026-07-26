@@ -110,6 +110,7 @@ export default function App() {
     forcedOutcome: 'none',
     minBet: 1.00,
     maxBet: 500.00,
+    allowedBets: [1, 2, 5, 10, 20, 50, 100, 250, 500],
     totalSpins: 0,
     totalWagered: 0,
     totalPayout: 0,
@@ -166,8 +167,23 @@ export default function App() {
 
   const handleBetChange = (delta: number) => {
     if (gameState.isSpinning) return;
-    const newBet = Math.max(adminConfig.minBet, Math.min(adminConfig.maxBet, gameState.bet + delta));
-    setGameState(prev => ({ ...prev, bet: newBet }));
+    const allowed = (adminConfig.allowedBets && adminConfig.allowedBets.length > 0)
+      ? adminConfig.allowedBets.filter(b => b >= adminConfig.minBet && b <= adminConfig.maxBet)
+      : [1, 2, 5, 10, 20, 50, 100, 250, 500];
+
+    allowed.sort((a, b) => a - b);
+
+    setGameState(prev => {
+      let nextBet = prev.bet;
+      if (delta > 0) {
+        const nextVal = allowed.find(v => v > prev.bet);
+        nextBet = nextVal !== undefined ? nextVal : (allowed[allowed.length - 1] || prev.bet);
+      } else {
+        const prevVal = [...allowed].reverse().find(v => v < prev.bet);
+        nextBet = prevVal !== undefined ? prevVal : (allowed[0] || prev.bet);
+      }
+      return { ...prev, bet: Math.max(adminConfig.minBet, Math.min(adminConfig.maxBet, nextBet)) };
+    });
   };
 
   const handleSpin = () => {
@@ -374,6 +390,7 @@ export default function App() {
         currentBet={gameState.bet}
         minBet={adminConfig.minBet}
         maxBet={adminConfig.maxBet}
+        allowedBets={adminConfig.allowedBets}
         balance={gameState.balance}
         turboMode={gameSettings.turboMode}
         autoSpinCount={gameSettings.autoSpinCount}

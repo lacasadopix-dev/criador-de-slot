@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { motion, useAnimation } from 'motion/react';
 import { SymbolType, SymbolImageConfig } from '../types';
 import { SlotSymbol } from './SlotSymbol';
@@ -37,6 +37,13 @@ export const SlotReel: React.FC<SlotReelProps> = ({
   const [currentSymbols, setCurrentSymbols] = useState<SymbolType[]>(resultSymbols || ['Castle', 'Sword', 'Diamond']);
   const controls = useAnimation();
 
+  const numRows = currentSymbols.length || 3;
+
+  // Generate a deterministic reel strip with 15 symbols for spinning animation
+  const spinningStrip = useMemo(() => {
+    return Array.from({ length: 15 }).map((_, i) => ALL_SYMBOLS[(i + colIndex * 3) % ALL_SYMBOLS.length]);
+  }, [colIndex]);
+
   useEffect(() => {
     if (resultSymbols && resultSymbols.length > 0 && !isSpinning && !isReelSpinning) {
       setCurrentSymbols(resultSymbols);
@@ -49,18 +56,17 @@ export const SlotReel: React.FC<SlotReelProps> = ({
     if (isReelSpinning) {
       if (spinStyle === 'cascade') {
         controls.start({
-          y: [-800, 0],
+          y: ['-200%', '0%'],
           transition: {
             repeat: Infinity,
             repeatType: 'loop',
-            duration: 0.28,
-            ease: 'easeIn',
+            duration: 0.3,
+            ease: 'linear',
           }
         });
       } else if (spinStyle === 'random') {
-        // Alternating directions: even columns down, odd columns up
         controls.start({
-          y: isOddCol ? [0, 800] : [0, -800],
+          y: isOddCol ? ['0%', '-200%'] : ['-200%', '0%'],
           transition: {
             repeat: Infinity,
             repeatType: 'loop',
@@ -69,35 +75,35 @@ export const SlotReel: React.FC<SlotReelProps> = ({
           }
         });
       } else if (spinStyle === 'zoom') {
-        // Zoom pulse expand animation
         controls.start({
-          scale: [0.85, 1.12, 0.85],
-          opacity: [0.6, 1, 0.6],
+          scale: [0.94, 1.04, 0.94],
+          opacity: [0.8, 1, 0.8],
           transition: {
             repeat: Infinity,
             repeatType: 'reverse',
-            duration: 0.25,
+            duration: 0.22,
             ease: 'easeInOut',
           }
         });
       } else if (spinStyle === 'turbo') {
         controls.start({
-          y: [0, -800],
+          y: ['0%', '-300%'],
           transition: {
             repeat: Infinity,
             repeatType: 'loop',
-            duration: 0.18,
+            duration: 0.14,
             ease: 'linear',
           }
         });
       } else {
-        // 'smooth' default
+        // Standard Casino Slot Roll ('smooth')
+        // Continuous top-to-bottom vertical scroll
         controls.start({
-          y: [0, -800],
+          y: ['0%', '-300%'],
           transition: {
             repeat: Infinity,
             repeatType: 'loop',
-            duration: 0.36,
+            duration: 0.28,
             ease: 'linear',
           }
         });
@@ -109,45 +115,45 @@ export const SlotReel: React.FC<SlotReelProps> = ({
       }
 
       if (spinStyle === 'cascade') {
-        controls.set({ y: -220, scale: 1, opacity: 1 });
+        controls.set({ y: '-25%', scale: 1, opacity: 1 });
         controls.start({
-          y: 0,
-          transition: { type: 'spring', stiffness: 220, damping: 12, mass: 1.1 }
+          y: '0%',
+          transition: { type: 'spring', stiffness: 260, damping: 15 }
         }).then(() => {
           onLandingComplete?.();
         });
       } else if (spinStyle === 'random') {
-        const startY = isOddCol ? 120 : -120;
+        const startY = isOddCol ? '20%' : '-20%';
         controls.set({ y: startY, scale: 1, opacity: 1 });
         controls.start({
-          y: 0,
+          y: '0%',
           transition: { type: 'spring', stiffness: 280, damping: 16 }
         }).then(() => {
           onLandingComplete?.();
         });
       } else if (spinStyle === 'zoom') {
-        controls.set({ scale: 0.3, opacity: 0, y: 0 });
+        controls.set({ scale: 0.88, opacity: 0.6, y: '0%' });
         controls.start({
           scale: 1,
           opacity: 1,
-          transition: { type: 'spring', stiffness: 350, damping: 18 }
+          transition: { type: 'spring', stiffness: 350, damping: 20 }
         }).then(() => {
           onLandingComplete?.();
         });
       } else if (spinStyle === 'turbo') {
-        controls.set({ y: -20, scale: 1, opacity: 1 });
+        controls.set({ y: '-10%', scale: 1, opacity: 1 });
         controls.start({
-          y: 0,
-          transition: { type: 'tween', duration: 0.10, ease: 'easeOut' }
+          y: '0%',
+          transition: { type: 'tween', duration: 0.08, ease: 'easeOut' }
         }).then(() => {
           onLandingComplete?.();
         });
       } else {
-        // smooth
-        controls.set({ y: -45, scale: 1, opacity: 1 });
+        // Standard Casino Landing: Crisp top-to-bottom drop into place with subtle bounce
+        controls.set({ y: '-18%', scale: 1, opacity: 1 });
         controls.start({
-          y: 0,
-          transition: { type: 'spring', stiffness: 320, damping: 20 }
+          y: '0%',
+          transition: { type: 'spring', stiffness: 340, damping: 22 }
         }).then(() => {
           onLandingComplete?.();
         });
@@ -160,18 +166,8 @@ export const SlotReel: React.FC<SlotReelProps> = ({
     transition: 'transform 0.15s ease-out',
   } : {};
 
-  const spinningColumn = Array.from({ length: 20 }).map((_, i) => {
-    const sym = ALL_SYMBOLS[Math.floor(Math.random() * ALL_SYMBOLS.length)];
-    return (
-      <div key={i} className="py-2 h-24 sm:h-32 flex items-center justify-center">
-        <SlotSymbol 
-          type={sym} 
-          customImage={customSymbols?.[sym]} 
-          symbolConfig={customSymbolConfigs?.[sym]}
-        />
-      </div>
-    );
-  });
+  // Each symbol in the spinning strip has height matching 1/numRows of the reel container (e.g. 33.333% for 3 rows)
+  const itemHeightPct = 100 / numRows;
 
   return (
     <div 
@@ -180,22 +176,38 @@ export const SlotReel: React.FC<SlotReelProps> = ({
         showReelBg ? 'bg-black/60 shadow-[inset_0_0_30px_rgba(0,0,0,0.8)]' : 'bg-transparent'
       } ${
         showReelBorders ? 'border-x sm:border-x-2 border-[#4d3d00]' : 'border-none'
-      } ${
-        isReelSpinning && spinStyle === 'turbo' ? 'blur-[1.5px] scale-y-105 transition-all' : ''
       }`}
     >
       <motion.div 
         animate={controls}
-        className="absolute top-0 w-full px-0.5 sm:px-1.5 flex flex-col h-full"
+        className={`absolute top-0 left-0 w-full h-full flex flex-col ${
+          isReelSpinning ? 'blur-[0.5px] opacity-95' : ''
+        }`}
       >
-        {isReelSpinning ? spinningColumn : (
-          <div className="flex flex-col justify-around h-full py-1 gap-1">
+        {isReelSpinning ? (
+          <div className="w-full flex flex-col">
+            {spinningStrip.map((sym, i) => (
+              <div 
+                key={i} 
+                style={{ height: `${itemHeightPct}%`, minHeight: `${itemHeightPct}%` }}
+                className="w-full flex items-center justify-center p-1 shrink-0"
+              >
+                <SlotSymbol 
+                  type={sym} 
+                  customImage={customSymbols?.[sym]} 
+                  symbolConfig={customSymbolConfigs?.[sym]}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col h-full w-full py-1">
             {currentSymbols.map((symbol, i) => (
               <div
                 key={i}
                 data-symbol-col={colIndex}
                 data-symbol-row={i}
-                className="relative flex items-center justify-center w-full h-full flex-1 min-h-0"
+                className="relative flex items-center justify-center w-full flex-1 min-h-0"
               >
                 <SlotSymbol 
                   type={symbol} 
@@ -211,3 +223,4 @@ export const SlotReel: React.FC<SlotReelProps> = ({
     </div>
   );
 };
+

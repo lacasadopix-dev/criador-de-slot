@@ -3,7 +3,7 @@ import {
   Shield, X, DollarSign, Activity, Percent, Flame, RefreshCw, Key, 
   AlertTriangle, Image as ImageIcon, Move, LayoutGrid, Upload, Trash2, 
   RotateCcw, Sliders, Eye, Coins, Minus, Plus, Cpu, Layers, Gift, FileText, Check, PlusCircle, Settings, Palette, Play,
-  Lock, Unlock, Grid, Maximize2, EyeOff, Crosshair, Ruler
+  Lock, Unlock, Grid, Maximize2, EyeOff, Crosshair, Ruler, Film
 } from 'lucide-react';
 import { AdminConfig, GameState, SymbolType, Payline, BonusConfig, ReelPosition, AnchorType } from '../types';
 import { SlotSymbol } from './SlotSymbol';
@@ -49,8 +49,11 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
   const [pinInput, setPinInput] = useState<string>('');
   const [customBalanceInput, setCustomBalanceInput] = useState<string>('');
+  const [customBetInput, setCustomBetInput] = useState<string>('');
   const [pinError, setPinError] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'metrics' | 'engine' | 'layout' | 'symbols'>('engine');
+  const [viewMode, setViewMode] = useState<'tools' | 'split' | 'preview_full'>('tools');
+  const [previewScale, setPreviewScale] = useState<number>(100);
   const [selectedElement, setSelectedElement] = useState<'slot' | 'spin' | 'turbo' | 'balance' | 'bet' | 'winBox' | 'winOverlay' | 'bg'>('slot');
   const [testSpinning, setTestSpinning] = useState<boolean>(false);
   const [mediaUrlInput, setMediaUrlInput] = useState<string>('');
@@ -545,12 +548,57 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* View Mode Switcher */}
+            <div className="flex items-center gap-1 bg-black/60 p-1 rounded-xl border border-red-900/50">
+              <button
+                type="button"
+                onClick={() => setViewMode('tools')}
+                className={`px-2.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ${
+                  viewMode === 'tools'
+                    ? 'bg-gradient-to-r from-red-700 to-amber-600 text-white shadow-lg border border-amber-400/50'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+                title="Exibir ferramentas de configuração em tela cheia"
+              >
+                <Sliders className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden sm:inline">Ferramentas ADM</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setViewMode('split')}
+                className={`px-2.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ${
+                  viewMode === 'split'
+                    ? 'bg-gradient-to-r from-red-700 to-amber-600 text-white shadow-lg border border-amber-400/50'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+                title="Exibir ferramentas e pré-visualização lado a lado"
+              >
+                <Grid className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden sm:inline">Modo Dividido</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setViewMode('preview_full')}
+                className={`px-2.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ${
+                  viewMode === 'preview_full'
+                    ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black shadow-lg border border-yellow-300 font-extrabold'
+                    : 'text-amber-400 hover:text-amber-200'
+                }`}
+                title="Aumentar para ver somente a pré-visualização do jogo em tela cheia"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span>👁️ Pré-Visualização</span>
+              </button>
+            </div>
+
             <button 
               onClick={onClose}
-              className="px-3 py-1.5 rounded-lg bg-red-600/80 hover:bg-red-500 text-white text-xs font-black uppercase tracking-wider transition cursor-pointer flex items-center gap-1.5 shadow-lg border border-red-400/40 active:scale-95"
+              className="px-3 py-1.5 rounded-lg bg-red-600/80 hover:bg-red-500 text-white text-xs font-black uppercase tracking-wider transition cursor-pointer flex items-center gap-1.5 shadow-lg border border-red-400/40 active:scale-95 shrink-0"
             >
               <X className="w-4 h-4" />
-              <span>Sair do ADM</span>
+              <span className="hidden sm:inline">Sair do ADM</span>
             </button>
           </div>
         </div>
@@ -584,6 +632,215 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                 Desbloquear Painel
               </button>
             </form>
+          </div>
+        ) : viewMode === 'preview_full' ? (
+          /* FULL SCREEN PREVIEW MODE WITH FLOATING ADMIN TOOLBAR */
+          <div className="flex-1 relative flex flex-col items-center justify-between p-2 sm:p-4 overflow-hidden bg-black/95">
+            
+            {/* FLOATING ADMIN TOOLBAR ON TOP OF PREVIEW */}
+            <div className="w-full max-w-5xl bg-black/85 backdrop-blur-xl border border-amber-500/50 rounded-2xl p-2.5 sm:p-3 shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-wrap items-center justify-between gap-2.5 z-50 shrink-0">
+              
+              {/* Mode Switching */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('tools')}
+                  className="px-3 py-1.5 bg-black/80 hover:bg-red-950/80 border border-red-500/40 rounded-xl text-xs font-bold text-gray-200 flex items-center gap-1.5 transition cursor-pointer"
+                >
+                  <Sliders className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Voltar às Ferramentas ADM</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setViewMode('split')}
+                  className="px-3 py-1.5 bg-black/80 hover:bg-amber-950/80 border border-amber-500/40 rounded-xl text-xs font-bold text-amber-300 flex items-center gap-1.5 transition cursor-pointer"
+                >
+                  <Grid className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Dividir Tela</span>
+                </button>
+              </div>
+
+              {/* Force Win Selector */}
+              <div className="flex items-center gap-1 bg-black/60 p-1 rounded-xl border border-white/10">
+                <span className="text-[10px] font-bold text-gray-400 px-1.5">Forçar Resultado:</span>
+                {[
+                  { id: 'none', label: '🎲 Padrão' },
+                  { id: 'win', label: '🏆 Vitória' },
+                  { id: 'bigwin', label: '🔥 Mega Win' },
+                  { id: 'loss', label: '❌ Derrota' },
+                ].map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => onUpdateAdminConfig({ forceWinType: opt.id as any })}
+                    className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition cursor-pointer ${
+                      (adminConfig.forceWinType || 'none') === opt.id
+                        ? 'bg-amber-500 text-black border-yellow-300 font-extrabold shadow'
+                        : 'bg-black/60 text-gray-400 border-white/10 hover:text-white'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Test Spin, Balance & Zoom */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTestSpinning(true);
+                    setTimeout(() => setTestSpinning(false), 2000);
+                  }}
+                  className="px-3 py-1.5 bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 rounded-xl text-xs font-black text-white flex items-center gap-1.5 shadow-lg border border-amber-400/50 cursor-pointer active:scale-95 transition"
+                >
+                  <Play className="w-3.5 h-3.5 fill-white" />
+                  <span>Girar Teste</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onUpdateBalance(gameState.balance + 1000)}
+                  className="px-2.5 py-1.5 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 rounded-xl text-xs font-bold text-emerald-300 flex items-center gap-1 cursor-pointer transition"
+                  title="Adicionar +R$ 1.000 para testes"
+                >
+                  <Plus className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>+R$ 1k</span>
+                </button>
+
+                {/* Zoom Scale Selector */}
+                <div className="flex items-center gap-1 bg-black/60 px-2 py-1 rounded-xl border border-white/10">
+                  <span className="text-[10px] text-gray-400 font-bold">Zoom:</span>
+                  {[80, 100, 120, 140].map(sc => (
+                    <button
+                      key={sc}
+                      type="button"
+                      onClick={() => setPreviewScale(sc)}
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold font-mono transition cursor-pointer ${
+                        previewScale === sc ? 'bg-amber-400 text-black font-extrabold' : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      {sc}%
+                    </button>
+                  ))}
+                </div>
+
+                {/* Metrics Overlay Toggle */}
+                <button
+                  type="button"
+                  onClick={() => onUpdateAdminConfig({ showMetrics: !adminConfig.showMetrics })}
+                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 border transition cursor-pointer ${
+                    adminConfig.showMetrics
+                      ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow'
+                      : 'bg-black/60 text-gray-400 border-white/10'
+                  }`}
+                  title="Ativar/Desativar réguas e métricas visuais da tela"
+                >
+                  <Ruler className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="hidden sm:inline">Métricas</span>
+                </button>
+              </div>
+
+            </div>
+
+            {/* ENLARGED CENTER STAGE FRAME */}
+            <div className="flex-1 w-full flex items-center justify-center overflow-hidden my-2 relative">
+              <div 
+                className="relative w-full h-full max-h-[85vh] aspect-[9/16] max-w-[540px] rounded-3xl bg-black border-4 border-amber-500/40 shadow-[0_0_90px_rgba(0,0,0,0.95)] overflow-hidden transition-all duration-300 flex items-center justify-center"
+                style={{ transform: `scale(${previewScale / 100})`, transformOrigin: 'center center' }}
+              >
+                <GameStage 
+                  adminConfig={adminConfig}
+                  gameState={gameState}
+                  grid={[
+                    ['Castle', 'Sword', 'Diamond', 'Crown', 'Lion'],
+                    ['Shield', 'Queen', 'Dragon', 'King', 'Coin'],
+                    ['Lion', 'Diamond', 'Castle', 'Sword', 'Crown'],
+                    ['Dragon', 'Castle', 'Shield', 'Queen', 'King'],
+                    ['Sword', 'Coin', 'Lion', 'Diamond', 'Crown'],
+                    ['Crown', 'Dragon', 'King', 'Shield', 'Castle'],
+                  ].slice(0, adminConfig.numReels || 5).map(col => col.slice(0, adminConfig.numRows || 3))}
+                  onSpin={() => {
+                    setTestSpinning(true);
+                    setTimeout(() => setTestSpinning(false), 2000);
+                  }}
+                  onBetChange={(delta) => {
+                    const current = gameState.bet;
+                    const allowed = adminConfig.allowedBets || [1, 2, 5, 10, 20, 50, 100, 250, 500];
+                    const sorted = [...allowed].sort((a,b) => a - b);
+                    let nextBet = current;
+                    if (delta > 0) {
+                      const nxt = sorted.find(v => v > current);
+                      nextBet = nxt !== undefined ? nxt : sorted[sorted.length - 1];
+                    } else {
+                      const prv = [...sorted].reverse().find(v => v < current);
+                      nextBet = prv !== undefined ? prv : sorted[0];
+                    }
+                  }}
+                  onOpenMenu={() => {}}
+                  onOpenAdmin={() => {}}
+                  onOpenAutoModal={() => {}}
+                  onStopAutoSpin={() => {}}
+                  onClearWin={() => {}}
+                  onAllReelsStopped={() => {}}
+                  onToggleTurbo={() => onUpdateAdminConfig({ turboMode: !adminConfig.turboMode })}
+                  onUpdateAdminConfig={onUpdateAdminConfig}
+                />
+              </div>
+            </div>
+
+            {/* BOTTOM QUICK TOOLBAR */}
+            <div className="w-full max-w-5xl bg-black/85 backdrop-blur-xl border border-red-900/40 rounded-2xl p-2.5 shadow-lg flex flex-wrap items-center justify-between gap-2 shrink-0">
+              
+              {/* Spin Style Selector */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-bold text-amber-300">Estilo de Rolagem:</span>
+                <div className="flex items-center gap-1 bg-black/60 p-1 rounded-xl border border-white/10">
+                  {[
+                    { id: 'smooth', label: '1. De Cima pra Baixo (Padrão)' },
+                    { id: 'cascade', label: '2. Slots Caindo' },
+                    { id: 'random', label: '3. Aleatório' },
+                    { id: 'zoom', label: '4. Zoom Effect' },
+                    { id: 'turbo', label: '5. Ultra Turbo' },
+                  ].map((mode) => (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() => onUpdateAdminConfig({ spinStyle: mode.id as any })}
+                      className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition cursor-pointer ${
+                        (adminConfig.spinStyle || 'smooth') === mode.id
+                          ? 'bg-amber-500 text-black border-yellow-300 font-extrabold shadow'
+                          : 'bg-black/60 text-gray-400 border-white/10 hover:text-white'
+                      }`}
+                    >
+                      {mode.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bet Presets Display */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-bold text-amber-300">Apostas Disponíveis:</span>
+                <div className="flex items-center gap-1 overflow-x-auto max-w-md no-scrollbar">
+                  {(adminConfig.allowedBets || [1, 2, 5, 10, 20, 50, 100, 250, 500]).map((bVal) => (
+                    <span
+                      key={bVal}
+                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${
+                        gameState.bet === bVal
+                          ? 'bg-amber-500 text-black border-amber-300 font-extrabold'
+                          : 'bg-black/60 text-gray-300 border-white/10'
+                      }`}
+                    >
+                      R${bVal}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
           </div>
         ) : (
           <>
@@ -784,6 +1041,142 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       >
                         Aplicar
                       </button>
+                    </div>
+                  </div>
+
+                  {/* CONFIGURAÇÃO DE VALORES DE APOSTA (BET PRESETS & LIMITES) */}
+                  <div className="bg-black/40 p-3.5 rounded-xl border border-amber-500/40 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-amber-300 uppercase tracking-widest flex items-center gap-1.5">
+                        <Coins className="w-4 h-4 text-amber-400" />
+                        Configuração de Apostas Disponíveis
+                      </span>
+                      <span className="text-[10px] text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30 font-mono font-bold">
+                        {(adminConfig.allowedBets || [1, 2, 5, 10, 20, 50, 100, 250, 500]).length} Opções Ativas
+                      </span>
+                    </div>
+
+                    {/* Min & Max Bet limits */}
+                    <div className="grid grid-cols-2 gap-3 bg-black/50 p-3 rounded-xl border border-white/10">
+                      <div>
+                        <label className="text-[11px] font-bold text-gray-300 block mb-1">Aposta Mínima (R$):</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0.01"
+                          value={adminConfig.minBet}
+                          onChange={(e) => onUpdateAdminConfig({ minBet: Math.max(0.01, parseFloat(e.target.value) || 0.01) })}
+                          className="w-full px-3 py-1.5 bg-black/80 border border-white/20 rounded-lg text-xs font-mono font-bold text-amber-300 focus:outline-none focus:border-amber-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold text-gray-300 block mb-1">Aposta Máxima (R$):</label>
+                        <input
+                          type="number"
+                          step="1"
+                          min="1"
+                          value={adminConfig.maxBet}
+                          onChange={(e) => onUpdateAdminConfig({ maxBet: Math.max(1, parseFloat(e.target.value) || 1) })}
+                          className="w-full px-3 py-1.5 bg-black/80 border border-white/20 rounded-lg text-xs font-mono font-bold text-amber-300 focus:outline-none focus:border-amber-400"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Active Bet Value Chips */}
+                    <div>
+                      <span className="text-[11px] font-extrabold text-gray-200 block mb-2 uppercase tracking-wider">
+                        Valores de Aposta Disponíveis no Jogo:
+                      </span>
+                      <div className="flex flex-wrap gap-2 p-2.5 bg-black/60 rounded-xl border border-white/10 min-h-[50px] items-center">
+                        {(adminConfig.allowedBets || [1, 2, 5, 10, 20, 50, 100, 250, 500]).map((betVal) => (
+                          <div
+                            key={betVal}
+                            className="flex items-center gap-1.5 bg-amber-500/20 border border-amber-400/60 px-3 py-1 rounded-lg text-xs font-mono font-black text-amber-200 shadow-sm"
+                          >
+                            <span>R$ {betVal.toFixed(betVal % 1 === 0 ? 0 : 2)}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const current = adminConfig.allowedBets || [1, 2, 5, 10, 20, 50, 100, 250, 500];
+                                const updated = current.filter(b => b !== betVal);
+                                onUpdateAdminConfig({ allowedBets: updated });
+                              }}
+                              className="text-amber-400 hover:text-red-400 transition cursor-pointer p-0.5"
+                              title="Remover este valor de aposta"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Add Custom Bet Value */}
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        step="0.5"
+                        placeholder="Novo valor de aposta (ex: 15.00)"
+                        value={customBetInput}
+                        onChange={(e) => setCustomBetInput(e.target.value)}
+                        className="flex-1 px-3 py-1.5 bg-black/70 border border-white/15 rounded-xl text-xs text-amber-200 font-mono font-bold focus:outline-none focus:border-amber-400"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const val = parseFloat(customBetInput);
+                          if (!isNaN(val) && val > 0) {
+                            const current = adminConfig.allowedBets || [1, 2, 5, 10, 20, 50, 100, 250, 500];
+                            if (!current.includes(val)) {
+                              const updated = [...current, val].sort((a, b) => a - b);
+                              onUpdateAdminConfig({ allowedBets: updated });
+                            }
+                            setCustomBetInput('');
+                          }
+                        }}
+                        className="px-4 py-1.5 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-black font-extrabold text-xs rounded-xl shadow-md transition cursor-pointer flex items-center gap-1 shrink-0"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Adicionar Aposta</span>
+                      </button>
+                    </div>
+
+                    {/* Quick Package Presets */}
+                    <div className="pt-1">
+                      <span className="text-[11px] font-bold text-gray-400 block mb-1.5">Pacotes Rápidos de Apostas:</span>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => onUpdateAdminConfig({ allowedBets: [1, 2, 5, 10, 20, 50, 100, 250, 500] })}
+                          className="px-2.5 py-1.5 bg-black/60 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg text-[10px] font-bold text-amber-300 transition cursor-pointer text-left"
+                        >
+                          ⚡ Padrão (1-500)
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => onUpdateAdminConfig({ allowedBets: [0.5, 1, 2, 5, 10, 25, 50, 100] })}
+                          className="px-2.5 py-1.5 bg-black/60 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg text-[10px] font-bold text-amber-300 transition cursor-pointer text-left"
+                        >
+                          🔥 Popular (0.50-100)
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => onUpdateAdminConfig({ allowedBets: [10, 20, 50, 100, 250, 500, 1000, 2500, 5000] })}
+                          className="px-2.5 py-1.5 bg-black/60 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg text-[10px] font-bold text-amber-300 transition cursor-pointer text-left"
+                        >
+                          💎 Alta / VIP (10-5000)
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => onUpdateAdminConfig({ allowedBets: [0.1, 0.2, 0.5, 1, 2, 5, 10] })}
+                          className="px-2.5 py-1.5 bg-black/60 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg text-[10px] font-bold text-amber-300 transition cursor-pointer text-left"
+                        >
+                          🪙 Micro (0.10-10)
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1263,6 +1656,190 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                                     );
                                   })}
                                 </div>
+                              </div>
+                            </div>
+
+                            {/* SEÇÃO DE MÍDIA E ANIMAÇÃO DE VITÓRIA DA LINHA (Foto ou Vídeo MP4/WebM) */}
+                            <div className="p-3.5 bg-black/80 rounded-xl border border-amber-500/30 space-y-3">
+                              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2">
+                                <span className="text-xs font-black text-amber-300 uppercase tracking-widest flex items-center gap-1.5">
+                                  <Film className="w-4 h-4 text-amber-400" />
+                                  Mídia & Animação de Vitória
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  {[
+                                    { id: 'none', label: 'Sem Mídia' },
+                                    { id: 'image', label: '🖼️ Foto/Imagem' },
+                                    { id: 'video', label: '🎬 Vídeo MP4/WebM' },
+                                  ].map(mType => (
+                                    <button
+                                      key={mType.id}
+                                      type="button"
+                                      onClick={() => handleUpdatePayline(activePayline.id, { winMediaType: mType.id as any })}
+                                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition cursor-pointer ${
+                                        (activePayline.winMediaType || 'none') === mType.id
+                                          ? 'bg-amber-500 text-black border-yellow-300 font-extrabold shadow'
+                                          : 'bg-black/60 text-gray-400 border-white/10 hover:text-white'
+                                      }`}
+                                    >
+                                      {mType.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {activePayline.winMediaType && activePayline.winMediaType !== 'none' && (
+                                <div className="space-y-3 pt-1">
+                                  <div className="space-y-1">
+                                    <label className="text-[11px] font-bold text-gray-300 flex items-center justify-between">
+                                      <span>URL da Mídia ({activePayline.winMediaType === 'video' ? 'Vídeo MP4/WebM' : 'Imagem PNG/JPG/GIF'}):</span>
+                                      <span className="text-[10px] text-amber-400 font-mono">Link público</span>
+                                    </label>
+                                    <input
+                                      type="text"
+                                      placeholder={activePayline.winMediaType === 'video' ? 'https://exemplo.com/efeito-vitoria.mp4' : 'https://exemplo.com/imagem.png'}
+                                      value={activePayline.winMediaUrl || ''}
+                                      onChange={(e) => handleUpdatePayline(activePayline.id, { winMediaUrl: e.target.value })}
+                                      className="w-full px-3 py-1.5 bg-black border border-white/20 rounded-lg text-xs text-white font-mono focus:outline-none focus:border-amber-400"
+                                    />
+
+                                    {/* Quick Preset Samples */}
+                                    <div className="flex items-center gap-1.5 pt-1 overflow-x-auto no-scrollbar">
+                                      <span className="text-[10px] text-gray-400 shrink-0 font-bold">Exemplos:</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdatePayline(activePayline.id, {
+                                          winMediaType: 'video',
+                                          winMediaUrl: 'https://assets.mixkit.co/videos/preview/mixkit-golden-particles-explosion-41543-large.mp4',
+                                          winAnimationType: 'bounce',
+                                          winMediaFit: 'cover'
+                                        })}
+                                        className="px-2 py-0.5 bg-amber-500/20 hover:bg-amber-500/40 border border-amber-500/50 rounded text-[10px] text-amber-300 font-bold shrink-0 cursor-pointer"
+                                      >
+                                        🎬 Ouro em Partículas
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdatePayline(activePayline.id, {
+                                          winMediaType: 'image',
+                                          winMediaUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=400&q=80',
+                                          winAnimationType: 'pulse',
+                                          winMediaFit: 'contain'
+                                        })}
+                                        className="px-2 py-0.5 bg-amber-500/20 hover:bg-amber-500/40 border border-amber-500/50 rounded text-[10px] text-amber-300 font-bold shrink-0 cursor-pointer"
+                                      >
+                                        🖼️ Troféu Néon
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdatePayline(activePayline.id, {
+                                          winMediaType: 'image',
+                                          winMediaUrl: 'https://images.unsplash.com/photo-1533158307587-828f0a76ef46?auto=format&fit=crop&w=400&q=80',
+                                          winAnimationType: 'shake',
+                                          winMediaFit: 'cover'
+                                        })}
+                                        className="px-2 py-0.5 bg-amber-500/20 hover:bg-amber-500/40 border border-amber-500/50 rounded text-[10px] text-amber-300 font-bold shrink-0 cursor-pointer"
+                                      >
+                                        🖼️ Chuva Dourada
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                    <div className="space-y-1">
+                                      <span className="text-[11px] font-bold text-gray-300 block">Estilo da Animação:</span>
+                                      <select
+                                        value={activePayline.winAnimationType || 'pulse'}
+                                        onChange={(e) => handleUpdatePayline(activePayline.id, { winAnimationType: e.target.value as any })}
+                                        className="w-full px-2.5 py-1.5 bg-black border border-white/20 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-amber-400"
+                                      >
+                                        <option value="pulse">⚡ Pulsar Néon</option>
+                                        <option value="bounce">🏀 Bounce Saltitante</option>
+                                        <option value="glow">🔥 Glow Flamejante</option>
+                                        <option value="shake">📳 Shake Terremoto</option>
+                                      </select>
+                                    </div>
+
+                                    <div className="space-y-1">
+                                      <span className="text-[11px] font-bold text-gray-300 block">Ajuste da Mídia:</span>
+                                      <select
+                                        value={activePayline.winMediaFit || 'cover'}
+                                        onChange={(e) => handleUpdatePayline(activePayline.id, { winMediaFit: e.target.value as any })}
+                                        className="w-full px-2.5 py-1.5 bg-black border border-white/20 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-amber-400"
+                                      >
+                                        <option value="cover">Preencher (Cover)</option>
+                                        <option value="contain">Conter Completo (Contain)</option>
+                                      </select>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* SEÇÃO DE POSIÇÃO DO VALOR DO GANHO (ARRASTÁVEL) */}
+                            <div className="p-3.5 bg-black/80 rounded-xl border border-amber-500/30 space-y-3">
+                              <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                                <span className="text-xs font-black text-amber-300 uppercase tracking-widest flex items-center gap-1.5">
+                                  <Move className="w-4 h-4 text-amber-400" />
+                                  Posição do Valor do Ganho (Badge)
+                                </span>
+                                <span className="text-[10px] text-cyan-300 font-bold bg-cyan-950/80 border border-cyan-500/40 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                                  <Move className="w-3 h-3" />
+                                  <span>Arrastável com o Mouse/Toque</span>
+                                </span>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                  <div className="flex justify-between text-[11px] font-bold text-gray-300">
+                                    <span>Posição X (% Horizontal):</span>
+                                    <span className="font-mono text-amber-300">{activePayline.winBadgePosX ?? 50}%</span>
+                                  </div>
+                                  <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={activePayline.winBadgePosX ?? 50}
+                                    onChange={(e) => handleUpdatePayline(activePayline.id, { winBadgePosX: parseInt(e.target.value) })}
+                                    className="w-full accent-amber-500 cursor-pointer"
+                                  />
+                                </div>
+
+                                <div className="space-y-1">
+                                  <div className="flex justify-between text-[11px] font-bold text-gray-300">
+                                    <span>Posição Y (% Vertical):</span>
+                                    <span className="font-mono text-amber-300">{activePayline.winBadgePosY ?? 50}%</span>
+                                  </div>
+                                  <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={activePayline.winBadgePosY ?? 50}
+                                    onChange={(e) => handleUpdatePayline(activePayline.id, { winBadgePosY: parseInt(e.target.value) })}
+                                    className="w-full accent-amber-500 cursor-pointer"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Presets de Posição Rápida */}
+                              <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                                <span className="text-[10px] text-gray-400 font-bold">Atalhos:</span>
+                                {[
+                                  { label: '📌 Centro', x: 50, y: 50 },
+                                  { label: '🔝 Topo', x: 50, y: 15 },
+                                  { label: '🔻 Base', x: 50, y: 85 },
+                                  { label: '⬅️ Esquerda', x: 20, y: 50 },
+                                  { label: '➡️ Direita', x: 80, y: 50 },
+                                ].map(preset => (
+                                  <button
+                                    key={preset.label}
+                                    type="button"
+                                    onClick={() => handleUpdatePayline(activePayline.id, { winBadgePosX: preset.x, winBadgePosY: preset.y })}
+                                    className="px-2 py-1 bg-black/60 hover:bg-amber-500/20 border border-white/10 hover:border-amber-400/50 rounded-lg text-[10px] font-bold text-gray-300 hover:text-white transition cursor-pointer"
+                                  >
+                                    {preset.label}
+                                  </button>
+                                ))}
                               </div>
                             </div>
                           </div>

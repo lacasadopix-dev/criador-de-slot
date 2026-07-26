@@ -22,6 +22,16 @@ export interface Payline {
   color: string; // color for line rendering
   strokeWidth?: number; // line thickness in px
   active: boolean;
+
+  // Media de Vitória (Foto ou Vídeo por URL)
+  winMediaUrl?: string; // Image or Video URL (MP4, WebM, GIF, PNG, JPG)
+  winMediaType?: 'none' | 'image' | 'video'; // Media type
+  winMediaFit?: 'contain' | 'cover';
+  winAnimationType?: 'pulse' | 'glow' | 'bounce' | 'shake' | 'sparkle' | 'banner';
+
+  // Posicionamento do Valor do Ganho (Badge / Banner da Linha)
+  winBadgePosX?: number; // X position in % (0 to 100)
+  winBadgePosY?: number; // Y position in % (0 to 100)
 }
 
 export interface BonusConfig {
@@ -48,6 +58,7 @@ export interface AdminConfig {
   forcedOutcome: 'none' | 'normal_win' | 'big_win' | 'loss';
   minBet: number;
   maxBet: number;
+  allowedBets?: number[]; // Available bet values set by admin
   totalSpins: number;
   totalWagered: number;
   totalPayout: number;

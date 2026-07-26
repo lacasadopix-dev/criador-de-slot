@@ -17,6 +17,10 @@ interface SlotMachineProps {
   numReels?: number;
   numRows?: number;
   onAllReelsStopped?: () => void;
+  isEditingPaylines?: boolean;
+  selectedPaylineId?: string;
+  testPaylineId?: string | null;
+  onUpdatePaylineBadgePos?: (paylineId: string, xPct: number, yPct: number) => void;
 }
 
 export const SlotMachine: React.FC<SlotMachineProps> = ({ 
@@ -32,6 +36,10 @@ export const SlotMachine: React.FC<SlotMachineProps> = ({
   numReels,
   numRows,
   onAllReelsStopped,
+  isEditingPaylines = false,
+  selectedPaylineId,
+  testPaylineId,
+  onUpdatePaylineBadgePos,
 }) => {
   const effectiveNumReels = numReels || grid?.length || 5;
   const effectiveNumRows = numRows || (grid?.[0] ? grid[0].length : 3);
@@ -67,7 +75,6 @@ export const SlotMachine: React.FC<SlotMachineProps> = ({
       const timers: NodeJS.Timeout[] = [];
 
       for (let col = 0; col < effectiveNumReels; col++) {
-        // For 'random', we can vary the delay order
         const colOrder = spinStyle === 'random' ? (col % 2 === 0 ? col : effectiveNumReels - col) : col;
         const delay = baseSpinTime + Math.abs(colOrder) * reelDelay;
         const timer = setTimeout(() => {
@@ -90,8 +97,25 @@ export const SlotMachine: React.FC<SlotMachineProps> = ({
 
   const winningPaylines = useMemo(() => {
     if (isSpinning || reelsSpinning.some(s => s) || !grid || !paylines) return [];
-    return evaluatePaylines(grid, paylines, effectiveNumReels, effectiveNumRows);
-  }, [grid, paylines, isSpinning, reelsSpinning, effectiveNumReels, effectiveNumRows]);
+    const realWins = evaluatePaylines(grid, paylines, effectiveNumReels, effectiveNumRows);
+    if (realWins.length > 0) return realWins;
+
+    // Synthetic preview win for editing paylines or test triggers
+    if (isEditingPaylines || testPaylineId) {
+      const activeLineId = testPaylineId || selectedPaylineId || paylines[0]?.id;
+      const targetPayline = paylines.find(p => p.id === activeLineId) || paylines[0];
+      if (targetPayline && targetPayline.positions) {
+        return [{
+          payline: targetPayline,
+          matchCount: targetPayline.positions.length || effectiveNumReels,
+          payout: targetPayline.payoutMultiplier * 10,
+          positions: targetPayline.positions.map((row, col) => ({ col, row })),
+        }];
+      }
+    }
+
+    return [];
+  }, [grid, paylines, isSpinning, reelsSpinning, effectiveNumReels, effectiveNumRows, isEditingPaylines, testPaylineId, selectedPaylineId]);
 
   const handleLandingComplete = (colIndex: number) => {
     if (colIndex === effectiveNumReels - 1 && isSpinning) {
@@ -108,6 +132,9 @@ export const SlotMachine: React.FC<SlotMachineProps> = ({
         numRows={effectiveNumRows}
         isSpinning={isSpinning || reelsSpinning.some(s => s)}
         individualReelPositions={individualReelPositions}
+        isEditingPaylines={isEditingPaylines}
+        selectedPaylineId={selectedPaylineId}
+        onUpdatePaylineBadgePos={onUpdatePaylineBadgePos}
       />
 
       {/* Main Grid */}
